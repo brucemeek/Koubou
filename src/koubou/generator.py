@@ -417,160 +417,125 @@ class ScreenshotGenerator:
         logger.info(f"📁 Output directory: {project_config.project.output_dir}")
         logger.info(f"🎯 Screenshots to generate: {len(project_config.screenshots)}")
 
-        # Check if localization is enabled
-        if project_config.localization:
-            return self._generate_localized_project(project_config, config_dir)
-        else:
-            return self._generate_single_language_project(project_config, config_dir)
+        # Always use unified generation approach (handles both single and multi-language)
+        return self._generate_localized_project(project_config, config_dir)
 
-    def _generate_single_language_project(
-        self, project_config: ProjectConfig, config_dir: Optional[Path] = None
-    ) -> List[Path]:
-        """Generate screenshots for single language (original behavior)."""
-        logger.info("🌍 Single language mode")
-
-        # Get defaults and devices
-        defaults = project_config.defaults or {}
-        default_background = defaults.get("background")
-        device_frame = None
-        if project_config.devices:
-            device_frame = self._map_device_name(project_config.devices[0])
-
-        results = []
-        screenshot_items = list(project_config.screenshots.items())
-        for i, (screenshot_id, screenshot_def) in enumerate(screenshot_items, 1):
-            logger.info(f"[{i}/{len(project_config.screenshots)}] {screenshot_id}")
-            try:
-                # Convert to ScreenshotConfig and generate
-                temp_config = self._convert_to_screenshot_config(
-                    screenshot_def,
-                    device_frame,
-                    default_background,
-                    project_config.project.output_dir,
-                    config_dir,
-                    screenshot_id,  # Pass the screenshot ID
-                )
-                if temp_config:
-                    output_path = self.generate_screenshot(temp_config)
-                    results.append(output_path)
-                else:
-                    logger.warning(f"Skipping {screenshot_id}: no source image found")
-            except Exception as _e:
-                logger.error(f"Failed to generate {screenshot_id}: {_e}")
-                # Continue with next screenshot instead of failing entire project
-                continue
-
-        logger.info(
-            f"🎉 Project complete! Generated {len(results)}/"
-            f"{len(project_config.screenshots)} screenshots"
-        )
-        return results
 
     def _generate_localized_project(
         self, project_config: ProjectConfig, config_dir: Optional[Path] = None
     ) -> List[Path]:
-        """Generate screenshots for all configured languages."""
-        localization_config = project_config.localization
-        logger.info(
-            f"🌍 Multi-language mode: {len(localization_config.languages)} languages"
-        )
-        logger.info(f"📝 Languages: {', '.join(localization_config.languages)}")
+        """Generate screenshots for all configured languages and devices."""
+        
+        # Handle both localized and non-localized projects
+        if project_config.localization:
+            localization_config = project_config.localization
+            languages = localization_config.languages
+            logger.info(f"🌍 Multi-language mode: {len(languages)} languages")
+            logger.info(f"📝 Languages: {', '.join(languages)}")
+        else:
+            languages = ["en"]  # Default to English for non-localized projects
+            localization_config = None
+            logger.info("🌍 Single language mode")
 
-        # Initialize localization components
+        # Initialize localization components only if needed
         if not config_dir:
             config_dir = Path.cwd()
 
-        xcstrings_manager = XCStringsManager(localization_config, config_dir)
-        content_resolver = LocalizedContentResolver(xcstrings_manager)
+        if localization_config:
+            xcstrings_manager = XCStringsManager(localization_config, config_dir)
+            content_resolver = LocalizedContentResolver(xcstrings_manager)
 
-        # Extract all text keys from all screenshots
-        all_text_keys = set()
-        for screenshot_def in project_config.screenshots.values():
-            text_keys = content_resolver.extract_text_keys_from_content(
-                screenshot_def.content
-            )
-            all_text_keys.update(text_keys)
+            # Extract all text keys from all screenshots
+            all_text_keys = set()
+            for screenshot_def in project_config.screenshots.values():
+                text_keys = content_resolver.extract_text_keys_from_content(
+                    screenshot_def.content
+                )
+                all_text_keys.update(text_keys)
 
-        logger.info(f"🔤 Found {len(all_text_keys)} unique text keys")
+            logger.info(f"🔤 Found {len(all_text_keys)} unique text keys")
 
-        # Create or update xcstrings file
-        if not xcstrings_manager.xcstrings_exists():
-            logger.info("📝 Creating XCStrings file")
-            xcstrings_manager.create_xcstrings_file(all_text_keys)
-        else:
-            logger.info("📝 Updating XCStrings file with new keys")
-            xcstrings_manager.update_xcstrings_with_new_keys(all_text_keys)
+            # Create or update xcstrings file
+            if not xcstrings_manager.xcstrings_exists():
+                logger.info("📝 Creating XCStrings file")
+                xcstrings_manager.create_xcstrings_file(all_text_keys)
+            else:
+                logger.info("📝 Updating XCStrings file with new keys")
+                xcstrings_manager.update_xcstrings_with_new_keys(all_text_keys)
 
-        # Get defaults and devices
+        # Get defaults
         defaults = project_config.defaults or {}
         default_background = defaults.get("background")
-        device_frame = None
-        if project_config.devices:
-            device_frame = self._map_device_name(project_config.devices[0])
-
+        
+        # Get devices list (default to single device for backward compatibility)
+        devices = project_config.devices or ["iPhone 15 Pro Portrait"]
+        
         all_results = []
 
-        # Generate screenshots for each language
-        for language in localization_config.languages:
-            logger.info(f"🌐 Generating screenshots for language: {language}")
+        # Generate screenshots for each device and language combination
+        for device in devices:
+            logger.info(f"📱 Processing device: {device}")
+            
+            for language in languages:
+                logger.info(f"🌐 Generating screenshots for device: {device}, language: {language}")
 
-            for i, (screenshot_id, screenshot_def) in enumerate(
-                project_config.screenshots.items(), 1
-            ):
-                logger.info(
-                    f"[{language}] [{i}/{len(project_config.screenshots)}] "
-                    f"{screenshot_id}"
-                )
-                try:
-                    # Create localized content
-                    localized_content = content_resolver.localize_content_items(
-                        screenshot_def.content, language
+                for i, (screenshot_id, screenshot_def) in enumerate(
+                    project_config.screenshots.items(), 1
+                ):
+                    logger.info(
+                        f"[{device}] [{language}] [{i}/{len(project_config.screenshots)}] "
+                        f"{screenshot_id}"
                     )
+                    try:
+                        # Create localized content (or use original for non-localized)
+                        if localization_config:
+                            localized_content = content_resolver.localize_content_items(
+                                screenshot_def.content, language
+                            )
+                            # Create a copy of screenshot definition with localized content
+                            from copy import deepcopy
+                            processed_screenshot_def = deepcopy(screenshot_def)
+                            processed_screenshot_def.content = localized_content
+                        else:
+                            processed_screenshot_def = screenshot_def
 
-                    # Create a copy of screenshot definition with localized content
-                    from copy import deepcopy
+                        # Generate device and language-specific output directory
+                        if localization_config:
+                            # Multi-language: output_dir/language/device/
+                            device_output_dir = str(
+                                Path(project_config.project.output_dir) / language / device.replace(" ", "_")
+                            )
+                        else:
+                            # Single language: output_dir/
+                            device_output_dir = project_config.project.output_dir
 
-                    localized_screenshot_def = deepcopy(screenshot_def)
-                    localized_screenshot_def.content = localized_content
-
-                    # Generate language-specific output directory
-                    language_output_dir = str(
-                        Path(project_config.project.output_dir) / language
-                    )
-
-                    if project_config.devices:
-                        device_name = project_config.devices[0].replace(" ", "_")
-                        language_output_dir = str(
-                            Path(language_output_dir) / device_name
+                        # Convert to ScreenshotConfig and generate
+                        temp_config = self._convert_to_screenshot_config(
+                            processed_screenshot_def,
+                            device,  # Use device name directly
+                            default_background,
+                            device_output_dir,
+                            config_dir,
+                            screenshot_id,
                         )
-
-                    # Convert to ScreenshotConfig and generate
-                    temp_config = self._convert_to_screenshot_config(
-                        localized_screenshot_def,
-                        device_frame,
-                        default_background,
-                        language_output_dir,
-                        config_dir,
-                        screenshot_id,
-                    )
-                    if temp_config:
-                        output_path = self.generate_screenshot(temp_config)
-                        all_results.append(output_path)
-                    else:
-                        logger.warning(
-                            f"Skipping {screenshot_id} for {language}: "
-                            f"no source image found"
+                        if temp_config:
+                            output_path = self.generate_screenshot(temp_config)
+                            all_results.append(output_path)
+                        else:
+                            logger.warning(
+                                f"Skipping {screenshot_id} for {device}/{language}: "
+                                f"no source image found"
+                            )
+                    except Exception as _e:
+                        logger.error(
+                            f"Failed to generate {screenshot_id} for {device}/{language}: {_e}"
                         )
-                except Exception as _e:
-                    logger.error(
-                        f"Failed to generate {screenshot_id} for {language}: {_e}"
-                    )
-                    # Continue with next screenshot instead of failing entire project
-                    continue
+                        # Continue with next screenshot instead of failing entire project
+                        continue
 
         logger.info(
-            f"🎉 Localized project complete! Generated {len(all_results)} screenshots "
-            f"across {len(localization_config.languages)} languages"
+            f"🎉 Project complete! Generated {len(all_results)} screenshots "
+            f"across {len(devices)} devices and {len(languages)} languages"
         )
         return all_results
 
@@ -799,16 +764,3 @@ class ScreenshotGenerator:
 
         return (x, y)
 
-    def _map_device_name(self, device):
-        """Map device names to device frame names."""
-        mapping = {
-            "iPhone 15 Pro Portrait": "iPhone 15 Pro - Natural Titanium - Portrait",
-            "iPhone 15 Pro Max Portrait": (
-                "iPhone 15 Pro Max - Natural Titanium - Portrait"
-            ),
-            "iPhone 16 Pro Portrait": "iPhone 16 Pro - Natural Titanium - Portrait",
-            "iPhone 16 Pro Max Portrait": (
-                "iPhone 16 Pro Max - Natural Titanium - Portrait"
-            ),
-        }
-        return mapping.get(device, "iPhone 15 Pro - Natural Titanium - Portrait")
