@@ -221,3 +221,176 @@ class TestDeviceFrameRenderer:
 
         with pytest.raises(DeviceFrameError, match="not found"):
             self.renderer.render("Nonexistent Frame", canvas, source_image)
+
+    def test_generate_screen_mask_from_image_basic(self):
+        """Test screen mask generation from frame image."""
+        # Create a mock frame with screen area (alpha=0) and bezel (alpha=255)
+        frame = Image.new("RGBA", (100, 200), (128, 128, 128, 255))
+
+        # Create screen area in the center (alpha=0)
+        for y in range(20, 180):
+            for x in range(10, 90):
+                frame.putpixel((x, y), (128, 128, 128, 0))
+
+        # Generate mask
+        mask = self.renderer.generate_screen_mask_from_image(frame)
+
+        # Verify mask is grayscale
+        assert mask.mode == "L"
+        assert mask.size == frame.size
+
+        # Check that screen area (center) is white (255)
+        center_pixel = mask.getpixel((50, 100))
+        assert center_pixel == 255, f"Center should be white (255), got {center_pixel}"
+
+        # Check that bezel area is black (0)
+        bezel_pixel = mask.getpixel((5, 5))
+        assert bezel_pixel == 0, f"Bezel should be black (0), got {bezel_pixel}"
+
+    def test_generate_screen_mask_from_image_with_rounded_corners(self):
+        """Test screen mask generation preserves rounded corners with anti-aliasing."""
+        # Create a frame with rounded corners (gradient alpha values)
+        frame = Image.new("RGBA", (100, 200), (128, 128, 128, 255))
+
+        # Screen area with rounded corners (gradient alpha values)
+        for y in range(10, 190):
+            for x in range(10, 90):
+                if y < 15 or y > 185:
+                    # Corner areas - gradient alpha for anti-aliasing
+                    if x < 15 or x > 85:
+                        alpha = min(50, abs(x - 50) + abs(y - 100) - 40)
+                        frame.putpixel((x, y), (128, 128, 128, alpha))
+                    else:
+                        frame.putpixel((x, y), (128, 128, 128, 0))
+                else:
+                    frame.putpixel((x, y), (128, 128, 128, 0))
+
+        # Generate mask
+        mask = self.renderer.generate_screen_mask_from_image(frame)
+
+        # Center should be white (full screen)
+        center_pixel = mask.getpixel((50, 100))
+        assert center_pixel == 255
+
+        # Corner gradients should be preserved (not pure black or white)
+        corner_pixel = mask.getpixel((12, 12))
+        msg = f"Corner should have gradient, got {corner_pixel}"
+        assert 0 < corner_pixel < 255, msg
+
+    def test_generate_screen_mask_from_image_flood_fill(self):
+        """Test flood fill correctly identifies outer area vs screen."""
+        # Create frame with outer area (alpha=0) and screen area
+        # (alpha=0) separated by bezel
+        frame = Image.new("RGBA", (100, 200), (128, 128, 128, 0))
+
+        # Add bezel around screen (alpha=255)
+        for y in range(200):
+            for x in range(100):
+                # Outer 5 pixels are transparent (outer area, alpha=0)
+                if x < 5 or x >= 95 or y < 5 or y >= 195:
+                    frame.putpixel((x, y), (128, 128, 128, 0))
+                # Bezel (5 pixels wide, alpha=255)
+                elif x < 10 or x >= 90 or y < 10 or y >= 190:
+                    frame.putpixel((x, y), (128, 128, 128, 255))
+                # Screen area (alpha=0)
+                else:
+                    frame.putpixel((x, y), (128, 128, 128, 0))
+
+        # Generate mask
+        mask = self.renderer.generate_screen_mask_from_image(frame)
+
+        # Outer area should be black (hidden)
+        outer_pixel = mask.getpixel((2, 2))
+        assert outer_pixel == 0, f"Outer area should be hidden (0), got {outer_pixel}"
+
+        # Bezel should be black (hidden)
+        bezel_pixel = mask.getpixel((7, 7))
+        assert bezel_pixel == 0, f"Bezel should be hidden (0), got {bezel_pixel}"
+
+        # Screen area should be white (visible)
+        screen_pixel = mask.getpixel((50, 100))
+        msg = f"Screen should be visible (255), got {screen_pixel}"
+        assert screen_pixel == 255, msg
+
+    def test_generate_screen_mask_with_alpha_threshold(self):
+        """Test that alpha threshold of 50 correctly separates screen from bezel."""
+        # Create frame with realistic layout:
+        # - Outer transparent area (alpha=0) connected to edges
+        # - Bezel ring (alpha>50) surrounding screen
+        # - Inner screen area (alpha=0-50) enclosed by bezel
+        frame = Image.new("RGBA", (100, 100), (128, 128, 128, 255))
+
+        # Outer transparent area (alpha=0) - will be marked as "outer" by flood fill
+        for y in range(100):
+            for x in range(100):
+                if x < 5 or x >= 95 or y < 5 or y >= 95:
+                    frame.putpixel((x, y), (128, 128, 128, 0))
+
+        # Bezel ring (alpha=255) - separates outer from screen
+        for y in range(5, 95):
+            for x in range(5, 95):
+                if x < 15 or x >= 85 or y < 15 or y >= 85:
+                    frame.putpixel((x, y), (128, 128, 128, 255))
+
+        # Inner screen area with gradient edges
+        # Center: alpha=0 (pure screen)
+        for y in range(25, 75):
+            for x in range(25, 75):
+                frame.putpixel((x, y), (128, 128, 128, 0))
+
+        # Screen edge gradient (alpha=25) between bezel and center
+        for y in range(15, 85):
+            for x in range(15, 85):
+                if 15 <= x < 25 or 75 <= x < 85 or 15 <= y < 25 or 75 <= y < 85:
+                    frame.putpixel((x, y), (128, 128, 128, 25))
+
+        # Generate mask
+        mask = self.renderer.generate_screen_mask_from_image(frame)
+
+        # Check outer area (should be black - hidden)
+        outer_pixel = mask.getpixel((2, 2))
+        assert outer_pixel == 0, f"Outer area should be black (0), got {outer_pixel}"
+
+        # Check bezel area (should be black - hidden)
+        bezel_pixel = mask.getpixel((10, 10))
+        assert bezel_pixel == 0, f"Bezel should be black (0), got {bezel_pixel}"
+
+        # Check screen center (alpha=0, should be white - visible)
+        screen_pixel = mask.getpixel((50, 50))
+        assert (
+            screen_pixel == 255
+        ), f"Screen center should be white (255), got {screen_pixel}"
+
+        # Check screen edge gradient (alpha=25, should be inverted to 230)
+        edge_pixel = mask.getpixel((20, 50))
+        msg = f"Screen edge (alpha=25) should be inverted to 230, got {edge_pixel}"
+        assert edge_pixel == 230, msg
+
+    def test_apply_screen_mask(self):
+        """Test applying screen mask to canvas."""
+        # Create canvas with content
+        canvas = Image.new("RGBA", (200, 300), (255, 0, 0, 255))
+
+        # Create mask (white in center, black on edges)
+        mask = Image.new("L", (100, 150), 0)
+        for y in range(25, 125):
+            for x in range(15, 85):
+                mask.putpixel((x, y), 255)
+
+        # Apply mask
+        result = self.renderer.apply_screen_mask(
+            canvas, mask, asset_position=(50, 75), asset_size=(100, 150)
+        )
+
+        # Result should be RGBA
+        assert result.mode == "RGBA"
+        assert result.size == canvas.size
+
+        # Check that masked area is visible (red)
+        center_pixel = result.getpixel((100, 150))
+        assert center_pixel[0] == 255, "Center should have red content"
+        assert center_pixel[3] > 0, "Center should be opaque"
+
+        # Check that unmasked area is transparent
+        edge_pixel = result.getpixel((10, 10))
+        assert edge_pixel[3] == 0, "Edge should be transparent"

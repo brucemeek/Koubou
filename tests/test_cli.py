@@ -172,7 +172,8 @@ class TestCLI:
         yaml_output = self.temp_dir / "yaml_output"
         assert yaml_output.exists()
 
-        # Should have generated a screenshot in YAML-specified directory with device subdirectory
+        # Should have generated a screenshot in YAML-specified directory
+        # with device subdirectory
         output_files = list(yaml_output.glob("**/*.png"))
         assert len(output_files) >= 1
 

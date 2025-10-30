@@ -22,8 +22,8 @@ class DeviceFrameRenderer:
             frame_directory: Path to directory containing device frames
         """
         self.frame_directory = frame_directory
-        self.frame_metadata = {}
-        self.size_metadata = {}
+        self.frame_metadata: Dict[str, Any] = {}
+        self.size_metadata: Dict[str, Any] = {}
         self._load_metadata()
 
     def _load_metadata(self) -> None:
@@ -96,11 +96,11 @@ class DeviceFrameRenderer:
         for ext in [".png", ".PNG"]:
             frame_path = self.frame_directory / f"{frame_name}{ext}"
             if frame_path.exists():
-                frame_image = Image.open(frame_path)
+                opened_image = Image.open(frame_path)
                 # Ensure RGBA mode for proper compositing
-                if frame_image.mode != "RGBA":
-                    frame_image = frame_image.convert("RGBA")
-                return frame_image
+                if opened_image.mode != "RGBA":
+                    return opened_image.convert("RGBA")
+                return opened_image
 
         raise DeviceFrameError(f"Device frame not found: {frame_name}")
 
@@ -108,7 +108,8 @@ class DeviceFrameRenderer:
         """Get metadata for a device frame."""
         # First try direct lookup for backward compatibility
         if frame_name in self.frame_metadata:
-            return self.frame_metadata[frame_name]
+            result = self.frame_metadata[frame_name]
+            return result if isinstance(result, dict) else None
 
         # Parse frame name and traverse nested structure
         # Expected format: "iPhone 15 Pro - Natural Titanium - Portrait"
@@ -155,7 +156,7 @@ class DeviceFrameRenderer:
                 frame_info = current.get(orientation)
                 if frame_info:
                     logger.info(f"📱 Found metadata for {frame_name}: {frame_info}")
-                    return frame_info
+                    return frame_info if isinstance(frame_info, dict) else None
                 else:
                     logger.warning(f"Orientation '{orientation}' not found")
 
@@ -249,7 +250,7 @@ class DeviceFrameRenderer:
 
     def get_available_frames(self) -> list[str]:
         """Get list of available device frame names."""
-        frames = []
+        frames: list[str] = []
 
         # Get from metadata if available
         if self.frame_metadata:
@@ -302,6 +303,10 @@ class DeviceFrameRenderer:
             mask_pixels = mask.load()
             alpha_pixels = alpha_channel.load()
 
+            if mask_pixels is None or alpha_pixels is None:
+                logger.error("Failed to load pixel data")
+                return Image.new("L", frame_image.size, 255)
+
             # ALPHA PIXEL APPROACH: Use actual frame alpha channel to create mask
             # The frame has alpha=0 in screen areas and alpha>0 in frame/bezel areas
 
@@ -348,130 +353,120 @@ class DeviceFrameRenderer:
     def generate_screen_mask_from_image(self, frame_image: Image.Image) -> Image.Image:
         """Generate screen mask from a pre-loaded and scaled frame image.
 
+        Uses flood fill to identify the screen area, then inverts the
+        frame's alpha channel to create a proper anti-aliased mask that
+        preserves smooth rounded corners.
+
         Args:
             frame_image: Pre-loaded and scaled frame image
 
         Returns:
-            Binary mask image where white = screen area, black = bezel/outside area
+            Grayscale mask image with anti-aliased edges (white = screen, black = bezel)
         """
         try:
             # Ensure RGBA mode
             if frame_image.mode != "RGBA":
                 frame_image = frame_image.convert("RGBA")
 
-            # Extract alpha channel
             alpha_channel = frame_image.split()[-1]
             alpha_pixels = alpha_channel.load()
-
             frame_width, frame_height = frame_image.size
 
-            # Create mask based on alpha values - no scaling distortion
-            mask = Image.new("L", frame_image.size, 0)  # Start with black (hide all)
-            mask_pixels = mask.load()
-
             logger.info(
-                f"📱 Creating precise mask using flood fill from scaled frame "
+                f"📱 Creating anti-aliased mask from alpha channel "
                 f"({frame_width}x{frame_height})"
             )
 
-            # FLOOD FILL ALGORITHM: Start from edges, propagate inward until
-            # hitting frame boundaries
+            # Use flood fill to identify outer transparent area vs inner screen area
             from collections import deque
 
-            # Track visited pixels (outside device area)
-            visited = set()
-            queue = deque()
+            visited: set[tuple[int, int]] = set()
+            queue: deque[tuple[int, int]] = deque()
 
-            # Add all edge pixels as starting points for flood fill
+            # Start from all edge pixels
             for x in range(frame_width):
-                queue.append((x, 0))  # Top edge
-                queue.append((x, frame_height - 1))  # Bottom edge
+                queue.append((x, 0))
+                queue.append((x, frame_height - 1))
             for y in range(frame_height):
-                queue.append((0, y))  # Left edge
-                queue.append((frame_width - 1, y))  # Right edge
+                queue.append((0, y))
+                queue.append((frame_width - 1, y))
 
-            # Flood fill propagation
-            directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # up, down, right, left
+            # Check pixel access is available
+            if alpha_pixels is None:
+                logger.error("Failed to load alpha pixel data")
+                return Image.new("L", frame_image.size, 255)
 
+            # Flood fill to mark outer area
+            # Continue through low alpha values (bezel outer edge gradients)
             while queue:
                 x, y = queue.popleft()
-
-                # Skip if already visited
-                if (x, y) in visited:
+                if (
+                    (x, y) in visited
+                    or x < 0
+                    or x >= frame_width
+                    or y < 0
+                    or y >= frame_height
+                ):
                     continue
-
-                # Skip if out of bounds
-                if x < 0 or x >= frame_width or y < 0 or y >= frame_height:
+                alpha_val = alpha_pixels[x, y]
+                if isinstance(alpha_val, tuple):
+                    alpha_val = alpha_val[0] if alpha_val else 0
+                if alpha_val > 50:  # Hit solid bezel
                     continue
-
-                alpha_value = alpha_pixels[x, y]
-
-                # If we hit frame/bezel (alpha>0), don't propagate further
-                if alpha_value > 0:
-                    continue
-
-                # Mark as visited (outside device)
                 visited.add((x, y))
+                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                    queue.append((x + dx, y + dy))
 
-                # Add neighbors to queue for propagation
-                for dx, dy in directions:
-                    next_x, next_y = x + dx, y + dy
-                    if (next_x, next_y) not in visited:
-                        queue.append((next_x, next_y))
+            # Create mask: invert alpha for screen area, black for outer/bezel
+            # This preserves the anti-aliasing at rounded corners
+            mask = Image.new("L", frame_image.size, 0)
+            mask_pixels = mask.load()
 
-            # Create mask based on flood fill results
+            if mask_pixels is None:
+                logger.error("Failed to load mask pixel data")
+                return Image.new("L", frame_image.size, 255)
+
             for y in range(frame_height):
                 for x in range(frame_width):
                     if (x, y) in visited:
-                        # Outside device (reached by flood fill) -> hide content
-                        mask_pixels[x, y] = 0  # Black = hide content
+                        # Outer area -> hide content
+                        mask_pixels[x, y] = 0
                     else:
-                        # Inside screen area (unreachable by flood fill) -> show content
-                        mask_pixels[x, y] = 255  # White = show content
+                        # Screen or bezel area
+                        pixel_val = alpha_pixels[x, y]
+                        alpha_val = (
+                            pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
+                        )
+                        if alpha_val > 50:
+                            # Bezel (including outer edge gradients)
+                            # -> completely hide content
+                            # This includes both solid bezel (alpha=255) and
+                            # bezel outer edge (alpha=51-200)
+                            mask_pixels[x, y] = 0
+                        else:
+                            # Screen and immediate screen edge gradient
+                            # (alpha 0-50) -> invert alpha
+                            # alpha=0 (screen) -> 255 (show)
+                            # alpha=10 (edge) -> 245 (mostly show)
+                            inverted_val = 255 - alpha_val
+                            mask_pixels[x, y] = int(inverted_val)
 
-            logger.info(
-                f"📱 Flood fill completed: {len(visited)} pixels marked as outside, "
-                f"{(frame_width*frame_height-len(visited))} as screen area"
-            )
-
-            logger.info(
-                "📱 Generated precise mask from scaled frame (no resize distortion)"
-            )
-
-            # DEBUG: Create a tinted version to visualize the mask
-            # Convert mask to RGBA and tint the masked areas
-            debug_mask = Image.new(
-                "RGBA", frame_image.size, (0, 0, 0, 0)
-            )  # Transparent
-            debug_pixels = debug_mask.load()
-
+            screen_pixels = 0
             for y in range(frame_height):
                 for x in range(frame_width):
-                    if mask_pixels[x, y] == 255:  # Screen area (white in mask)
-                        debug_pixels[x, y] = (
-                            0,
-                            255,
-                            0,
-                            100,
-                        )  # Semi-transparent green = where content shows
-                    else:  # Frame area (black in mask)
-                        debug_pixels[x, y] = (
-                            255,
-                            0,
-                            0,
-                            100,
-                        )  # Semi-transparent red = where content is hidden
+                    pixel_val = mask_pixels[x, y]
+                    if isinstance(pixel_val, (int, float)) and pixel_val > 128:
+                        screen_pixels += 1
 
-            # Save debug mask for inspection
-            debug_path = "/tmp/debug_mask_{frame_width}x{frame_height}.png"
-            debug_mask.save(debug_path)
-            logger.info(f"📱 DEBUG: Saved tinted mask visualization to {debug_path}")
+            logger.info(
+                f"📱 Generated anti-aliased mask with smooth rounded corners "
+                f"({screen_pixels} screen pixels)"
+            )
 
             return mask
 
         except Exception as _e:
             logger.error(f"Failed to generate screen mask from frame image: {_e}")
-            # Return a fallback mask (full white - no clipping)
             return Image.new("L", frame_image.size, 255)
 
     def apply_screen_mask(

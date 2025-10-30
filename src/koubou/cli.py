@@ -559,7 +559,10 @@ def upload(
         "replace",
         "--mode",
         "-m",
-        help="Upload mode: 'replace' (delete existing, default) or 'append' (keep existing)",
+        help=(
+            "Upload mode: 'replace' (delete existing, default) "
+            "or 'append' (keep existing)"
+        ),
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
@@ -693,7 +696,8 @@ def upload(
             failed_count = sum(1 for r in results if not r.success)
             if failed_count > 0:
                 console.print(
-                    f"\n⚠️ {failed_count} screenshot(s) failed to upload", style="yellow"
+                    f"\n⚠️ {failed_count} screenshot(s) failed to upload",
+                    style="yellow",
                 )
                 raise typer.Exit(1)
 

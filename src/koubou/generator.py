@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from PIL import Image
 
@@ -111,9 +111,6 @@ class ScreenshotGenerator:
 
                     # Create temporary config for this image
                     temp_config = self._create_temp_config_for_image(config, img_config)
-                    positioned_image = self._position_source_image(
-                        source_image, canvas, temp_config
-                    )
 
                     # Apply device frame if specified for this image
                     if img_config["frame"] and config.device_frame:
@@ -121,7 +118,11 @@ class ScreenshotGenerator:
                             f"📱 Applying device frame to asset: {config.device_frame}"
                         )
                         positioned_image = self._apply_asset_frame(
-                            positioned_image, canvas, temp_config
+                            source_image, canvas, temp_config
+                        )
+                    else:
+                        positioned_image = self._position_source_image(
+                            source_image, canvas, temp_config
                         )
 
                     # Composite this layer onto canvas
@@ -132,18 +133,18 @@ class ScreenshotGenerator:
                 source_image = self._load_source_image(config.source_image)
                 logger.info(f"📷 Loaded source: {source_image.size}")
 
-                logger.info("📐 Positioning source image")
-                positioned_image = self._position_source_image(
-                    source_image, canvas, config
-                )
-
                 # Apply device frame to individual image if frame: true
                 if config.image_frame and config.device_frame:
                     logger.info(
                         f"📱 Applying device frame to asset: {config.device_frame}"
                     )
                     positioned_image = self._apply_asset_frame(
-                        positioned_image, canvas, config
+                        source_image, canvas, config
+                    )
+                else:
+                    logger.info("📐 Positioning source image")
+                    positioned_image = self._position_source_image(
+                        source_image, canvas, config
                     )
 
                 canvas = Image.alpha_composite(canvas, positioned_image)
@@ -181,11 +182,11 @@ class ScreenshotGenerator:
     def _load_source_image(self, image_path: str) -> Image.Image:
         """Load and validate source image."""
         try:
-            image = Image.open(image_path)
+            opened_image = Image.open(image_path)
             # Convert to RGBA to ensure consistent handling
-            if image.mode != "RGBA":
-                image = image.convert("RGBA")
-            return image
+            if opened_image.mode != "RGBA":
+                return opened_image.convert("RGBA")
+            return opened_image
         except Exception as _e:
             raise RenderError(
                 f"Failed to load source image '{image_path}': {_e}"
@@ -251,12 +252,12 @@ class ScreenshotGenerator:
 
     def _create_temp_config_for_image(
         self, base_config: ScreenshotConfig, img_config: dict
-    ):
+    ) -> Any:
         """Create a temporary config for individual image processing."""
 
         # Create a copy of the base config with image-specific settings
         class TempConfig:
-            def __init__(self, base, img):
+            def __init__(self, base: ScreenshotConfig, img: dict) -> None:
                 self.name = base.name
                 self.device_frame = base.device_frame
                 self.output_size = base.output_size
@@ -310,21 +311,133 @@ class ScreenshotGenerator:
 
     def _apply_asset_frame(
         self,
-        positioned_image: Image.Image,
+        source_image: Image.Image,
         canvas: Image.Image,
         config: ScreenshotConfig,
     ) -> Image.Image:
-        """Apply device frame to individual asset with proper screen masking."""
+        """Apply device frame to individual asset with proper screen fitting.
+
+        This function:
+        1. Loads frame and detects screen area from alpha channel
+        2. Fits source image to detected screen bounds (maintaining aspect ratio)
+        3. Scales both fitted source and frame by image_scale
+        4. Positions them together at specified location
+        5. Applies mask to preserve rounded corners
+        6. Overlays frame on top
+        """
         try:
-            # Load and scale device frame image first
+            # Load frame
+            if config.device_frame is None:
+                raise RenderError("Device frame name is required")
             frame_image = self.device_frame_renderer._load_frame_image(
                 config.device_frame
             )
             original_frame_size = frame_image.size
             logger.info(f"📱 Original frame size: {original_frame_size}")
 
-            # Scale frame to match asset scale
+            # Detect screen bounds using flood fill from frame edges
+            # Frame structure:
+            # outer area (alpha=0) -> bezel (alpha>0) -> screen (alpha=0)
+            # We need to exclude the outer area to find just the screen
+            if frame_image.mode != "RGBA":
+                frame_image = frame_image.convert("RGBA")
+
+            alpha_channel = frame_image.split()[-1]
+            alpha_pixels = alpha_channel.load()
+            frame_width, frame_height = frame_image.size
+
+            if alpha_pixels is None:
+                raise RenderError("Failed to load alpha pixel data from frame")
+
+            # Flood fill from edges to mark outer transparent area
+            from collections import deque
+
+            visited: set[tuple[int, int]] = set()
+            queue: deque[tuple[int, int]] = deque()
+
+            # Start from all edge pixels
+            for x in range(frame_width):
+                queue.append((x, 0))
+                queue.append((x, frame_height - 1))
+            for y in range(frame_height):
+                queue.append((0, y))
+                queue.append((frame_width - 1, y))
+
+            # Flood fill to find outer area
+            while queue:
+                x, y = queue.popleft()
+                if (
+                    (x, y) in visited
+                    or x < 0
+                    or x >= frame_width
+                    or y < 0
+                    or y >= frame_height
+                ):
+                    continue
+                pixel_val = alpha_pixels[x, y]
+                alpha_val = pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
+                if alpha_val > 0:  # Hit bezel, stop
+                    continue
+                visited.add((x, y))
+                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                    queue.append((x + dx, y + dy))
+
+            # Find bounding box of screen area (alpha=0 but NOT in visited)
+            min_x, min_y = frame_width, frame_height
+            max_x, max_y = 0, 0
+
+            for y in range(frame_height):
+                for x in range(frame_width):
+                    pixel_val = alpha_pixels[x, y]
+                    alpha_val = (
+                        pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
+                    )
+                    if alpha_val == 0 and (x, y) not in visited:  # Pure screen area
+                        min_x = min(min_x, x)
+                        min_y = min(min_y, y)
+                        max_x = max(max_x, x)
+                        max_y = max(max_y, y)
+
+            # Don't expand - use exact detected screen bounds
+            # The mask will handle edge gradients via anti-aliasing
+            screen_x = min_x
+            screen_y = min_y
+            screen_width = max_x - min_x + 1
+            screen_height = max_y - min_y + 1
+
+            logger.info(
+                f"📱 Detected screen area from flood fill: ({screen_x}, {screen_y}) "
+                f"{screen_width}×{screen_height}"
+            )
+
+            # Step 1: Fit source image to frame's screen area
+            source_width, source_height = source_image.size
+            scale_x = screen_width / source_width
+            scale_y = screen_height / source_height
+            fit_scale = min(scale_x, scale_y)  # Maintain aspect ratio
+
+            fitted_width = int(source_width * fit_scale)
+            fitted_height = int(source_height * fit_scale)
+
+            logger.info(
+                f"📱 Fitting source {source_width}×{source_height} to screen area "
+                f"{screen_width}×{screen_height}: "
+                f"scale={fit_scale:.3f}, result={fitted_width}×{fitted_height}"
+            )
+
+            fitted_source = source_image.resize(
+                (fitted_width, fitted_height), Image.Resampling.LANCZOS
+            )
+
+            # Step 2: Apply image_scale to both fitted source and frame
             asset_scale = config.image_scale or 1.0
+
+            final_source_width = int(fitted_width * asset_scale)
+            final_source_height = int(fitted_height * asset_scale)
+            final_source = fitted_source.resize(
+                (final_source_width, final_source_height), Image.Resampling.LANCZOS
+            )
+
             scaled_frame_width = int(original_frame_size[0] * asset_scale)
             scaled_frame_height = int(original_frame_size[1] * asset_scale)
             scaled_frame = frame_image.resize(
@@ -332,53 +445,63 @@ class ScreenshotGenerator:
             )
 
             logger.info(
-                f"📱 Scaled frame: {original_frame_size} → {scaled_frame.size} "
-                f"(scale: {asset_scale})"
+                f"📱 Applied scale {asset_scale}: "
+                f"source {fitted_width}×{fitted_height} → "
+                f"{final_source_width}×{final_source_height}, "
+                f"frame → {scaled_frame_width}×{scaled_frame_height}"
             )
 
-            # Generate screen mask from the already-scaled frame
-            # (preserves precise boundaries)
+            # Step 3: Generate screen mask from scaled frame (preserves rounded corners)
             screen_mask = self.device_frame_renderer.generate_screen_mask_from_image(
                 scaled_frame
             )
-            logger.info(f"📱 Generated screen mask: {screen_mask.size}")
 
-            # Get asset position to position frame at same location
+            # Step 4: Calculate positioning
             position = config.image_position or ["50%", "50%"]
             center_x = self._convert_percentage_to_pixels(position[0], canvas.width)
             center_y = self._convert_percentage_to_pixels(position[1], canvas.height)
 
-            # Calculate frame position (center frame at same position as asset)
+            # Frame position (centered at specified location)
             frame_x = center_x - scaled_frame_width // 2
             frame_y = center_y - scaled_frame_height // 2
 
+            # Source position (centered within frame's screen area)
+            scaled_screen_x = int(screen_x * asset_scale)
+            scaled_screen_y = int(screen_y * asset_scale)
+            scaled_screen_width = int(screen_width * asset_scale)
+            scaled_screen_height = int(screen_height * asset_scale)
+
+            # Center source within scaled screen area
+            source_offset_x = (scaled_screen_width - final_source_width) // 2
+            source_offset_y = (scaled_screen_height - final_source_height) // 2
+
+            source_x = frame_x + scaled_screen_x + source_offset_x
+            source_y = frame_y + scaled_screen_y + source_offset_y
+
             logger.info(
-                f"📱 Positioning frame: center at ({center_x}, {center_y}), "
-                f"top-left at ({frame_x}, {frame_y})"
+                f"📱 Positioning: frame at ({frame_x}, {frame_y}), "
+                f"source at ({source_x}, {source_y})"
             )
 
-            # Step 1: Start with the positioned asset (no masking yet)
+            # Step 5: Compose the result
             result = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
-            result = Image.alpha_composite(result, positioned_image)
 
-            # Step 2: Apply screen mask to clip content to frame boundaries
-            logger.info("📱 Applying screen mask with precise boundaries")
+            # Paste source image at calculated position
+            result.paste(final_source, (source_x, source_y), final_source)
 
-            # Create canvas-sized mask positioned at the frame location
-            canvas_mask = Image.new("L", canvas.size, 0)  # Start with black (hide all)
+            # Apply screen mask to clip content
+            canvas_mask = Image.new("L", canvas.size, 0)
             canvas_mask.paste(screen_mask, (frame_x, frame_y))
 
-            # Apply mask to result
             transparent_bg = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
             result = Image.composite(result, transparent_bg, canvas_mask)
 
-            # Step 3: Overlay the scaled and positioned frame on top of masked content
-            # Apply frame regardless of canvas bounds - let user control positioning
+            # Overlay frame on top
             frame_overlay = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
             frame_overlay.paste(scaled_frame, (frame_x, frame_y), scaled_frame)
             result = Image.alpha_composite(result, frame_overlay)
-            logger.info("📱 Applied device frame overlay successfully")
 
+            logger.info("📱 Applied device frame with proper fitting and masking")
             return result
 
         except Exception as e:
@@ -511,7 +634,8 @@ class ScreenshotGenerator:
                                 / device.replace(" ", "_")
                             )
                         else:
-                            # Single language: output_dir/device/ (ALWAYS include device folder)
+                            # Single language: output_dir/device/
+                            # (ALWAYS include device folder)
                             device_output_dir = str(
                                 Path(project_config.project.output_dir)
                                 / device.replace(" ", "_")
@@ -549,9 +673,12 @@ class ScreenshotGenerator:
         return all_results
 
     def _resolve_output_path(
-        self, output_dir: str, screenshot_name: str, config_dir: Optional[Path] = None
+        self,
+        output_dir: str,
+        screenshot_name: str,
+        config_dir: Optional[Path] = None,
     ) -> Path:
-        """Resolve output path relative to config directory if provided."""
+        """Resolve output path relative to config directory."""  # noqa: D401
         output_path = Path(output_dir) / f"{screenshot_name}.png"
 
         if config_dir:
@@ -563,13 +690,13 @@ class ScreenshotGenerator:
 
     def _convert_to_screenshot_config(
         self,
-        screenshot_def,
-        device_frame,
-        default_background,
-        output_dir,
-        config_dir=None,
-        screenshot_id=None,
-    ):
+        screenshot_def: Any,
+        device_frame: Any,
+        default_background: Any,
+        output_dir: str,
+        config_dir: Optional[Path] = None,
+        screenshot_id: Optional[str] = None,
+    ) -> Optional[ScreenshotConfig]:
         """Convert ScreenshotDefinition to ScreenshotConfig for generation."""
 
         # Process content items and collect ALL images
@@ -621,27 +748,32 @@ class ScreenshotGenerator:
 
         # Validate that all image paths exist
         for img_config in image_configs:
-            if not img_config["path"] or not Path(img_config["path"]).exists():
-                logger.error(f"Source image not found: {img_config['path']}")
-                if not img_config["path"]:
+            img_path = str(img_config["path"])
+            if not img_path or not Path(img_path).exists():
+                logger.error(f"Source image not found: {img_path}")
+                if not img_path:
                     raise ConfigurationError("Image asset path is empty or missing")
                 else:
-                    raise ConfigurationError(
-                        f"Image asset not found: {img_config['path']}"
-                    )
+                    raise ConfigurationError(f"Image asset not found: {img_path}")
 
         # Use first image for canvas sizing (backward compatibility)
         # TODO: Could be enhanced to calculate optimal canvas size from all images
         primary_image_config = image_configs[0]
         from PIL import Image
 
-        source_image = Image.open(primary_image_config["path"])
+        img_path_str = str(primary_image_config["path"])
+        source_image = Image.open(img_path_str)
         original_width, original_height = source_image.size
-        image_scale = primary_image_config["scale"]
+        scale_raw = primary_image_config["scale"]
+        # Ensure scale is a numeric value
+        if isinstance(scale_raw, (int, float)):
+            image_scale_val = float(scale_raw)
+        else:
+            image_scale_val = float(str(scale_raw))
 
         # Calculate scaled image dimensions
-        scaled_width = int(original_width * image_scale)
-        scaled_height = int(original_height * image_scale)
+        scaled_width = int(original_width * image_scale_val)
+        scaled_height = int(original_height * image_scale_val)
         logger.info(
             f"📐 Original: {original_width}×{original_height} → "
             f"Scaled: {scaled_width}×{scaled_height}"
@@ -734,28 +866,48 @@ class ScreenshotGenerator:
 
         # Create screenshot config with calculated dimensions
         # For backward compatibility, use primary image in main config
+        img_pos = primary_image_config["position"]
+        img_position_list = img_pos if isinstance(img_pos, list) else None
+
+        # Ensure screenshot_id is not None
+        if screenshot_id is None:
+            screenshot_id = "screenshot"
+
+        scale_raw2 = primary_image_config["scale"]
+        # Ensure scale is a numeric value
+        if isinstance(scale_raw2, (int, float)):
+            scale_val = float(scale_raw2)
+        else:
+            scale_val = float(str(scale_raw2))
+
         config = ScreenshotConfig(
             name=screenshot_id,
-            source_image=primary_image_config["path"],
+            source_image=str(primary_image_config["path"]),
             device_frame=device_frame if should_use_frame else None,
             output_size=(canvas_width, canvas_height),  # Dynamic size based on content
             background=background_config,
             text_overlays=text_overlays,
-            image_position=primary_image_config["position"],
-            image_scale=primary_image_config["scale"],
-            image_frame=primary_image_config["frame"],
+            image_position=img_position_list,
+            image_scale=scale_val,
+            image_frame=bool(primary_image_config["frame"]),
             output_path=str(
                 self._resolve_output_path(output_dir, screenshot_id, config_dir)
             ),
         )
 
-        # Store ALL image configurations as custom attribute for multi-image support
-        config._image_configs = image_configs
-        config._scaled_dimensions = (scaled_width, scaled_height)
+        # Store ALL image configurations as custom attribute
+        # for multi-image support
+        config._image_configs = image_configs  # type: ignore[attr-defined]
+        config._scaled_dimensions = (  # type: ignore[attr-defined]
+            scaled_width,
+            scaled_height,
+        )
 
         return config
 
-    def _convert_position(self, position, canvas_size):
+    def _convert_position(
+        self, position: list[str], canvas_size: tuple[int, int]
+    ) -> tuple[int, int]:
         """Convert percentage or pixel position to absolute pixels."""
         canvas_width, canvas_height = canvas_size
 
