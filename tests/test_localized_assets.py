@@ -127,14 +127,14 @@ class TestLocalizedAssets:
         assert len(results) == 2
 
         # Verify English output exists and uses en/hero.png (red)
-        en_output = self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "hero.png"
+        en_output = self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "hero.png"
         assert en_output.exists()
         en_image = Image.open(en_output)
         # Red hero.png should be used
         assert en_image.size[0] > 0
 
         # Verify Spanish output exists and uses es/hero.png (green)
-        es_output = self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "hero.png"
+        es_output = self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "hero.png"
         assert es_output.exists()
         es_image = Image.open(es_output)
         assert es_image.size[0] > 0
@@ -174,15 +174,11 @@ class TestLocalizedAssets:
         assert len(results) == 2
 
         # Verify English output uses en_custom.png
-        en_output = (
-            self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "custom.png"
-        )
+        en_output = self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "custom.png"
         assert en_output.exists()
 
         # Verify Spanish output uses es_custom.png
-        es_output = (
-            self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "custom.png"
-        )
+        es_output = self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "custom.png"
         assert es_output.exists()
 
     def test_fallback_to_base_language(self):
@@ -216,7 +212,7 @@ class TestLocalizedAssets:
         assert len(results) == 2
 
         # Verify French output exists and uses en/hero.png as fallback
-        fr_output = self.output_dir / "fr" / "iPhone_15_-_Black_-_Portrait" / "hero.png"
+        fr_output = self.output_dir / "fr" / "iPhone_15_Pro_Portrait" / "hero.png"
         assert fr_output.exists()
 
     def test_dict_fallback_to_default(self):
@@ -254,9 +250,7 @@ class TestLocalizedAssets:
         assert len(results) == 2
 
         # Verify French output exists and uses fallback.png
-        fr_output = (
-            self.output_dir / "fr" / "iPhone_15_-_Black_-_Portrait" / "custom.png"
-        )
+        fr_output = self.output_dir / "fr" / "iPhone_15_Pro_Portrait" / "custom.png"
         assert fr_output.exists()
 
     def test_mixed_convention_and_dict_assets(self):
@@ -298,14 +292,10 @@ class TestLocalizedAssets:
         assert len(results) == 2
 
         # Verify outputs exist
-        en_output = (
-            self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "mixed.png"
-        )
+        en_output = self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "mixed.png"
         assert en_output.exists()
 
-        es_output = (
-            self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "mixed.png"
-        )
+        es_output = self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "mixed.png"
         assert es_output.exists()
 
     def test_backward_compatibility_string_assets(self):
@@ -334,5 +324,5 @@ class TestLocalizedAssets:
         assert len(results) == 1
 
         # Verify output exists
-        output = self.output_dir / "iPhone_15_-_Black_-_Portrait" / "simple.png"
+        output = self.output_dir / "iPhone_15_Pro_Portrait" / "simple.png"
         assert output.exists()

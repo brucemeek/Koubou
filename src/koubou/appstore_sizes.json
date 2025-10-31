@@ -1,0 +1,42 @@
+{
+  "iPhone6_9": {
+    "width": 1320,
+    "height": 2868,
+    "description": "iPhone 16 Pro Max, 15 Pro Max (6.9\")"
+  },
+  "iPhone6_7": {
+    "width": 1290,
+    "height": 2796,
+    "description": "iPhone 15/14/13/12 Pro Max, Plus (6.7\")"
+  },
+  "iPhone6_5": {
+    "width": 1242,
+    "height": 2688,
+    "description": "iPhone 11 Pro Max, XS Max (6.5\")"
+  },
+  "iPhone6_1": {
+    "width": 1179,
+    "height": 2556,
+    "description": "iPhone 16/15/14/13 Pro, 12 Pro, 11, XR (6.1\")"
+  },
+  "iPhone5_5": {
+    "width": 1242,
+    "height": 2208,
+    "description": "iPhone 8 Plus, 7 Plus, 6s Plus (5.5\")"
+  },
+  "iPadPro12_9": {
+    "width": 2048,
+    "height": 2732,
+    "description": "iPad Pro 12.9\" (3rd gen and later)"
+  },
+  "iPadPro11": {
+    "width": 1668,
+    "height": 2388,
+    "description": "iPad Pro 11\", iPad Air 11\" M2"
+  },
+  "iPadPro13": {
+    "width": 2048,
+    "height": 2732,
+    "description": "iPad Pro 13\" M4, iPad Air 13\" M2"
+  }
+}

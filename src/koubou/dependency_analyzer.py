@@ -134,7 +134,9 @@ class DependencyAnalyzer:
                             screenshot_assets.append(dependency)
 
                             # Update mappings - use consistent path resolution
-                            asset_key = str(dependency.resolved_path.resolve())
+                            asset_key = str(
+                                dependency.resolved_path.resolve()  # type: ignore  # noqa: E501
+                            )
                             if asset_key not in self._asset_to_screenshots:
                                 self._asset_to_screenshots[asset_key] = []
                             self._asset_to_screenshots[asset_key].append(screenshot_id)
@@ -192,7 +194,7 @@ class DependencyAnalyzer:
         Returns:
             Dictionary mapping changed asset paths to affected screenshot IDs
         """
-        changed_assets = {}
+        changed_assets: Dict[str, List[str]] = {}
 
         for dependency in self.dependencies:
             if dependency.has_changed():
@@ -226,7 +228,7 @@ class DependencyAnalyzer:
         Returns:
             Dictionary mapping missing asset paths to affected screenshot IDs
         """
-        missing_assets = {}
+        missing_assets: Dict[str, List[str]] = {}
 
         for dependency in self.dependencies:
             if not dependency.resolved_path or not dependency.resolved_path.exists():

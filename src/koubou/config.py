@@ -1,9 +1,50 @@
 """Configuration models using Pydantic for type safety and validation."""
 
+import json
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, model_validator, validator
+
+
+def load_appstore_sizes() -> Dict[str, Dict[str, Union[int, str]]]:
+    """Load App Store standard sizes from JSON file."""
+    sizes_file = Path(__file__).parent / "appstore_sizes.json"
+    with open(sizes_file, "r") as f:
+        data: Dict[str, Dict[str, Union[int, str]]] = json.load(f)
+        return data
+
+
+def resolve_output_size(size: Union[str, Tuple[int, int]]) -> Tuple[int, int]:
+    """Resolve output size from named App Store size or custom tuple.
+
+    Args:
+        size: Either a named size (e.g., "iPhone6_9") or custom tuple (width, height)
+
+    Returns:
+        Tuple of (width, height)
+
+    Raises:
+        ValueError: If named size not found or dimensions invalid
+    """
+    if isinstance(size, tuple):
+        width, height = size
+        if width <= 0 or height <= 0:
+            raise ValueError(f"Invalid dimensions: {width}x{height}")
+        return size
+
+    # Named size - look up in App Store sizes
+    appstore_sizes = load_appstore_sizes()
+    if size not in appstore_sizes:
+        available = ", ".join(appstore_sizes.keys())
+        raise ValueError(
+            f"Unknown App Store size '{size}'. Available sizes: {available}"
+        )
+
+    size_info = appstore_sizes[size]
+    width = int(size_info["width"])
+    height = int(size_info["height"])
+    return (width, height)
 
 
 class GradientConfig(BaseModel):
@@ -179,8 +220,12 @@ class ScreenshotConfig(BaseModel):
     device_frame: Optional[str] = Field(
         default=None, description="Device frame to apply"
     )
-    output_size: Tuple[int, int] = Field(
-        ..., description="Final output size (width, height)"
+    output_size: Union[str, Tuple[int, int]] = Field(
+        ...,
+        description=(
+            "Final output size. Either App Store named size (e.g., 'iPhone6_9') "
+            "or custom tuple [width, height]"
+        ),
     )
     output_path: Optional[str] = Field(default=None, description="Custom output path")
     background: Optional[GradientConfig] = Field(
@@ -209,13 +254,15 @@ class ScreenshotConfig(BaseModel):
         return v
 
     @validator("output_size")
-    def validate_output_size(cls, v: Tuple[int, int]) -> Tuple[int, int]:
-        width, height = v
-        if width <= 0 or height <= 0:
-            raise ValueError("Output size must be positive")
+    def validate_output_size(cls, v: Union[str, Tuple[int, int]]) -> Tuple[int, int]:
+        """Validate and resolve output size to tuple."""
+        # Resolve named size or validate custom tuple
+        resolved = resolve_output_size(v)
+        width, height = resolved
+
         if width > 10000 or height > 10000:
             raise ValueError("Output size too large (max 10000x10000)")
-        return v
+        return resolved
 
 
 class ContentItem(BaseModel):
@@ -420,15 +467,32 @@ class ProjectInfo(BaseModel):
 
     name: str = Field(..., description="Project name")
     output_dir: str = Field(default="output", description="Output directory")
+    device: str = Field(
+        default="iPhone 15 Pro Portrait", description="Target device frame"
+    )
+    output_size: Union[str, Tuple[int, int]] = Field(
+        default="iPhone6_9",
+        description=(
+            "Output size for all screenshots. Either App Store named size "
+            "(e.g., 'iPhone6_9') or custom tuple [width, height]"
+        ),
+    )
+
+    @validator("output_size", always=True)
+    def validate_output_size(cls, v: Union[str, Tuple[int, int]]) -> Tuple[int, int]:
+        """Validate and resolve output size to tuple."""
+        resolved = resolve_output_size(v)
+        width, height = resolved
+
+        if width > 10000 or height > 10000:
+            raise ValueError("Output size too large (max 10000x10000)")
+        return resolved
 
 
 class ProjectConfig(BaseModel):
     """Complete project configuration."""
 
     project: ProjectInfo = Field(..., description="Project information")
-    devices: List[str] = Field(
-        default=["iPhone 15 - Black - Portrait"], description="Target devices"
-    )
     defaults: Optional[Dict] = Field(default=None, description="Default settings")
     localization: Optional[LocalizationConfig] = Field(
         default=None,

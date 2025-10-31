@@ -149,10 +149,10 @@ class TestLiveLocalization:
 
         # Should create language-specific directories with device subdirectories
         assert (
-            self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
+            self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
         ).exists()
         assert (
-            self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
+            self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
         ).exists()
 
     def test_xcstrings_change_triggers_regeneration(self):
@@ -165,12 +165,8 @@ class TestLiveLocalization:
         assert initial_result.success_count == 2
 
         # Get initial modification times
-        en_file = (
-            self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
-        )
-        es_file = (
-            self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
-        )
+        en_file = self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        es_file = self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
 
         initial_en_mtime = en_file.stat().st_mtime
         initial_es_mtime = es_file.stat().st_mtime
@@ -295,10 +291,10 @@ class TestLiveLocalization:
 
         # Both language versions should be updated
         assert (
-            self.output_dir / "en" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
+            self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
         ).exists()
         assert (
-            self.output_dir / "es" / "iPhone_15_-_Black_-_Portrait" / "welcome.png"
+            self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
         ).exists()
 
     def test_nonexistent_xcstrings_file_gets_created(self):

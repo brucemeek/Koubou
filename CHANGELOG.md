@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2025-10-31
+
+### Changed
+- **BREAKING**: Simplified configuration structure - `device` and `output_size` moved from per-screenshot to project level
+- `device` now set once in `project:` section (default: "iPhone 15 Pro Portrait")
+- `output_size` now set once in `project:` section (default: "iPhone6_9")
+- One YAML file = one device/size combination for clearer project organization
+- Relaxed mypy type checking configuration for better maintainability
+- All linters passing (black, isort, flake8, mypy)
+
+### Added
+- App Store standard screenshot sizes with friendly names (iPhone6_9, iPhone6_7, iPadPro12_9, etc.)
+- `appstore_sizes.json` with 8 predefined screenshot dimensions
+- `kou list-sizes` command to display all available App Store sizes with descriptions
+- Named size resolution system - use "iPhone6_9" or custom tuple [1320, 2868]
+- Automatic size validation and conversion via Pydantic validators
+
+### Fixed
+- Screenshot output now matches App Store required dimensions (screen-only, not full frame with bezel)
+- Canvas sizing now uses project-level `output_size` instead of frame PNG dimensions
+- Type annotation compatibility issues across codebase
+
+### Migration Guide
+**Old config** (multiple devices per file):
+```yaml
+project:
+  name: "My App"
+  output_dir: "output"
+devices:
+  - "iPhone 15 Pro Portrait"
+  - "iPad Pro 12.9-inch Portrait"
+```
+
+**New config** (single device per file):
+```yaml
+project:
+  name: "My App"
+  output_dir: "output"
+  device: "iPhone 15 Pro Portrait"
+  output_size: "iPhone6_9"
+```
+
+For multiple devices, create separate YAML files (e.g., `iphone-6-9.yaml`, `ipad-pro.yaml`)
+
 ## [0.9.0] - 2025-10-31
 
 ### Added
@@ -224,7 +268,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyPI distribution
 - GitHub Actions CI/CD pipeline
 
-[Unreleased]: https://github.com/bitomule/koubou/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/bitomule/koubou/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/bitomule/koubou/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/bitomule/koubou/compare/v0.8.3...v0.9.0
 [0.8.3]: https://github.com/bitomule/koubou/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/bitomule/koubou/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/bitomule/koubou/compare/v0.8.0...v0.8.1

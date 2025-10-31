@@ -102,7 +102,7 @@ class TestScreenshotConfig:
 
     def test_invalid_output_size(self, sample_image):
         """Test invalid output size fails validation."""
-        with pytest.raises(ValidationError, match="positive"):
+        with pytest.raises(ValidationError, match="Invalid dimensions"):
             ScreenshotConfig(
                 name="Test", source_image=sample_image, output_size=(0, 800)
             )
@@ -112,6 +112,21 @@ class TestScreenshotConfig:
         with pytest.raises(ValidationError, match="too large"):
             ScreenshotConfig(
                 name="Test", source_image=sample_image, output_size=(20000, 800)
+            )
+
+    def test_named_appstore_size(self, sample_image):
+        """Test named App Store size is resolved correctly."""
+        config = ScreenshotConfig(
+            name="Test", source_image=sample_image, output_size="iPhone6_9"
+        )
+        # iPhone6_9 should resolve to (1320, 2868)
+        assert config.output_size == (1320, 2868)
+
+    def test_invalid_named_size(self, sample_image):
+        """Test invalid named size fails validation."""
+        with pytest.raises(ValidationError, match="Unknown App Store size"):
+            ScreenshotConfig(
+                name="Test", source_image=sample_image, output_size="InvalidSize"
             )
 
 

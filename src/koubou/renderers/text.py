@@ -1,7 +1,7 @@
 """Text rendering functionality using Pillow."""
 
 import logging
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
@@ -17,7 +17,7 @@ class TextRenderer:
 
     def __init__(self) -> None:
         """Initialize text renderer."""
-        self.font_cache = {}
+        self.font_cache: Dict[str, Any] = {}
         self.gradient_renderer = GradientRenderer()
 
     def render(self, text_config: TextOverlay, canvas: Image.Image) -> None:
@@ -119,7 +119,7 @@ class TextRenderer:
         """Get font with strict loading - no dangerous fallbacks."""
         cache_key = (font_family, font_size, font_weight)
 
-        if cache_key not in self.font_cache:
+        if cache_key not in self.font_cache:  # type: ignore[comparison-overlap]
             # Use safe default only when no font specified or "System"
             if font_family in ("System", "Arial"):  # Default fonts
                 font = self._load_safe_default_font(font_size, font_weight)
@@ -142,9 +142,9 @@ class TextRenderer:
                     )
                     raise ConfigurationError(error_msg) from e
 
-            self.font_cache[cache_key] = font
+            self.font_cache[cache_key] = font  # type: ignore[index]
 
-        return self.font_cache[cache_key]
+        return self.font_cache[cache_key]  # type: ignore[index]
 
     def _load_safe_default_font(
         self, font_size: int, font_weight: str = "normal"
@@ -186,14 +186,14 @@ class TextRenderer:
             try:
                 font = ImageFont.truetype(font_name, font_size)
                 logger.info(f"Using default font: {font_name}")
-                return font
+                return font  # type: ignore[return-value]
             except (OSError, IOError):
                 continue
 
         # Last resort: try PIL's default font before failing
         try:
             logger.warning("Using PIL default font as last resort")
-            return ImageFont.load_default()
+            return ImageFont.load_default()  # type: ignore[return-value]
         except Exception:
             pass
 
@@ -245,13 +245,17 @@ class TextRenderer:
 
         for font_name in font_names:
             try:
-                return ImageFont.truetype(font_name, font_size)
+                return ImageFont.truetype(  # type: ignore[return-value]
+                    font_name, font_size
+                )
             except (OSError, IOError):
                 continue
 
         # If no specific variant found, try the base font name
         try:
-            return ImageFont.truetype(font_family, font_size)
+            return ImageFont.truetype(  # type: ignore[return-value]
+                font_family, font_size
+            )
         except (OSError, IOError):
             # Try system font approximation for bold
             if font_weight == "bold":
@@ -259,7 +263,9 @@ class TextRenderer:
                     # On macOS, try to find system fonts
                     for system_font in [".SF NS Text", "Helvetica Neue", "Arial"]:
                         try:
-                            return ImageFont.truetype(system_font, font_size)
+                            return ImageFont.truetype(  # type: ignore[return-value]
+                                system_font, font_size
+                            )
                         except (OSError, IOError):
                             continue
                 except Exception:
@@ -315,7 +321,7 @@ class TextRenderer:
         # Use textwrap for basic wrapping, then verify with font metrics
         words = text.split()
         lines = []
-        current_line = []
+        current_line: List[str] = []
 
         for word in words:
             test_line = " ".join(current_line + [word])
@@ -481,7 +487,7 @@ class TextRenderer:
 
         # Generate gradient image for text bounds
         gradient_image = self.gradient_renderer.create_gradient(
-            text_bounds, text_config.gradient
+            text_bounds, text_config.gradient  # type: ignore[arg-type]
         )
 
         # Create full-canvas gradient image

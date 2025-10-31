@@ -9,15 +9,20 @@ class TestConfigTree:
     def test_flatten_simple_dict(self):
         """Test flattening a simple dictionary."""
         config = {
-            "project": {"name": "Test App", "output_dir": "output"},
-            "devices": ["iPhone 15 Pro"],
+            "project": {
+                "name": "Test App",
+                "output_dir": "output",
+                "device": "iPhone 15 Pro",
+                "output_size": "iPhone6_9",
+            },
         }
 
         result = ConfigTree.flatten(config)
 
         assert result["project.name"] == "Test App"
         assert result["project.output_dir"] == "output"
-        assert result["devices[0]"] == "iPhone 15 Pro"
+        assert result["project.device"] == "iPhone 15 Pro"
+        assert result["project.output_size"] == "iPhone6_9"
 
     def test_flatten_nested_screenshots(self):
         """Test flattening screenshot configurations."""

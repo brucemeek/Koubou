@@ -327,7 +327,6 @@ class LiveScreenshotGenerator:
         # Create a temporary project config with just this screenshot
         single_screenshot_config = ProjectConfig(
             project=config.project,
-            devices=config.devices,
             defaults=config.defaults,
             localization=config.localization,  # Include localization settings
             screenshots={screenshot_id: config.screenshots[screenshot_id]},

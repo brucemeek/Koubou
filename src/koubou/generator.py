@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -168,7 +168,10 @@ class ScreenshotGenerator:
             logger.info(f"🎬 Starting generation: {config.name}")
 
             # Create canvas at target size
-            canvas = Image.new("RGBA", config.output_size, (255, 255, 255, 0))
+            # output_size is validated to tuple by Pydantic
+            canvas = Image.new(
+                "RGBA", config.output_size, (255, 255, 255, 0)  # type: ignore[arg-type]
+            )
             logger.info(f"🎨 Created canvas: {config.output_size}")
 
             # Render background if specified
@@ -673,94 +676,98 @@ class ScreenshotGenerator:
         defaults = project_config.defaults or {}
         default_background = defaults.get("background")
 
-        # Get devices list (default to single device for backward compatibility)
-        devices = project_config.devices or ["iPhone 15 - Black - Portrait"]
+        # Get device and output_size from project config
+        device = project_config.project.device
+        # output_size is validated and always a tuple at runtime
+        output_size: Tuple[int, int] = (
+            project_config.project.output_size  # type: ignore[assignment]
+        )
+        logger.info(f"📱 Processing device: {device}")
+        logger.info(f"📐 Output size: {output_size}")
 
         all_results = []
 
-        # Generate screenshots for each device and language combination
-        for device in devices:
-            logger.info(f"📱 Processing device: {device}")
+        # Generate screenshots for each language
+        for language in languages:
+            logger.info(
+                f"🌐 Generating screenshots for device: {device}, "
+                f"language: {language}"
+            )
 
-            for language in languages:
+            for i, (screenshot_id, screenshot_def) in enumerate(
+                project_config.screenshots.items(), 1
+            ):
                 logger.info(
-                    f"🌐 Generating screenshots for device: {device}, "
-                    f"language: {language}"
+                    f"[{device}] [{language}] "
+                    f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
                 )
+                try:
+                    # Create localized content (or use original for non-localized)
+                    if localization_config:
+                        localized_content = content_resolver.localize_content_items(
+                            screenshot_def.content, language
+                        )
+                        # Create copy with localized content
+                        from copy import deepcopy
 
-                for i, (screenshot_id, screenshot_def) in enumerate(
-                    project_config.screenshots.items(), 1
-                ):
-                    logger.info(
-                        f"[{device}] [{language}] "
-                        f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
+                        processed_screenshot_def = deepcopy(screenshot_def)
+                        processed_screenshot_def.content = localized_content
+                    else:
+                        processed_screenshot_def = screenshot_def
+
+                    # Generate device and language-specific output directory
+                    if localization_config:
+                        # Multi-language: output_dir/language/device/
+                        device_output_dir = str(
+                            Path(project_config.project.output_dir)
+                            / language
+                            / device.replace(" ", "_")
+                        )
+                    else:
+                        # Single language: output_dir/device/
+                        # (ALWAYS include device folder)
+                        device_output_dir = str(
+                            Path(project_config.project.output_dir)
+                            / device.replace(" ", "_")
+                        )
+
+                    # Convert to ScreenshotConfig and generate
+                    # Get base_language for asset resolution
+                    base_lang = (
+                        localization_config.base_language
+                        if localization_config
+                        else None
                     )
-                    try:
-                        # Create localized content (or use original for non-localized)
-                        if localization_config:
-                            localized_content = content_resolver.localize_content_items(
-                                screenshot_def.content, language
-                            )
-                            # Create copy with localized content
-                            from copy import deepcopy
-
-                            processed_screenshot_def = deepcopy(screenshot_def)
-                            processed_screenshot_def.content = localized_content
-                        else:
-                            processed_screenshot_def = screenshot_def
-
-                        # Generate device and language-specific output directory
-                        if localization_config:
-                            # Multi-language: output_dir/language/device/
-                            device_output_dir = str(
-                                Path(project_config.project.output_dir)
-                                / language
-                                / device.replace(" ", "_")
-                            )
-                        else:
-                            # Single language: output_dir/device/
-                            # (ALWAYS include device folder)
-                            device_output_dir = str(
-                                Path(project_config.project.output_dir)
-                                / device.replace(" ", "_")
-                            )
-
-                        # Convert to ScreenshotConfig and generate
-                        # Get base_language for asset resolution
-                        base_lang = (
-                            localization_config.base_language
-                            if localization_config
-                            else None
+                    temp_config = self._convert_to_screenshot_config(
+                        processed_screenshot_def,
+                        device,  # Use device name directly
+                        default_background,
+                        device_output_dir,
+                        config_dir,
+                        screenshot_id,
+                        output_size=output_size,  # Pass project-level output size
+                        language=language,
+                        base_language=base_lang,
+                    )
+                    if temp_config:
+                        output_path = self.generate_screenshot(temp_config)
+                        all_results.append(output_path)
+                    else:
+                        logger.warning(
+                            f"Skipping {screenshot_id} for {device}/{language}: "
+                            f"no source image found"
                         )
-                        temp_config = self._convert_to_screenshot_config(
-                            processed_screenshot_def,
-                            device,  # Use device name directly
-                            default_background,
-                            device_output_dir,
-                            config_dir,
-                            screenshot_id,
-                            language=language,
-                            base_language=base_lang,
-                        )
-                        if temp_config:
-                            output_path = self.generate_screenshot(temp_config)
-                            all_results.append(output_path)
-                        else:
-                            logger.warning(
-                                f"Skipping {screenshot_id} for {device}/{language}: "
-                                f"no source image found"
-                            )
-                    except Exception as _e:
-                        logger.error(
-                            f"Failed to generate {screenshot_id} for "
-                            f"{device}/{language}: {_e}"
-                        )
-                        # Continue with next screenshot instead of failing project
-                        continue
+                except Exception as _e:
+                    logger.error(
+                        f"Failed to generate {screenshot_id} for "
+                        f"{device}/{language}: {_e}"
+                    )
+                    # Continue with next screenshot instead of failing project
+                    continue
 
         logger.info(
             f"🎉 Project complete! Generated {len(all_results)} screenshots "
-            f"across {len(devices)} devices and {len(languages)} languages"
+            f"for {device} across {len(languages)} language(s)"
         )
         return all_results
 
@@ -788,6 +795,7 @@ class ScreenshotGenerator:
         output_dir: str,
         config_dir: Optional[Path] = None,
         screenshot_id: Optional[str] = None,
+        output_size: Optional[Tuple[int, int]] = None,
         language: Optional[str] = None,
         base_language: Optional[str] = None,
     ) -> Optional[ScreenshotConfig]:
@@ -886,7 +894,17 @@ class ScreenshotGenerator:
             f"Scaled: {scaled_width}×{scaled_height}"
         )
 
-        # Calculate canvas size - respect screenshot-level frame setting
+        # Use project-level output_size for canvas dimensions
+        if output_size:
+            canvas_width, canvas_height = output_size
+            logger.info(
+                f"📐 Canvas: {canvas_width}×{canvas_height} (project output size)"
+            )
+        else:
+            # Fallback for backward compatibility (shouldn't happen with new config)
+            canvas_width, canvas_height = scaled_width + 400, scaled_height + 800
+            logger.warning("No output_size specified, using content-based sizing")
+
         # Check frame setting: None=use default, True=force frame, False=no frame
         frame_setting = getattr(screenshot_def, "frame", None)
         if frame_setting is False:
@@ -895,29 +913,6 @@ class ScreenshotGenerator:
             should_use_frame = bool(
                 device_frame
             )  # Use default logic if frame is None or True
-        if should_use_frame:
-            frame_size = self.device_frame_renderer.get_frame_size(device_frame)
-            if frame_size:
-                canvas_width, canvas_height = frame_size
-                logger.info(
-                    "📐 Canvas: {canvas_width}×{canvas_height} (frame-based sizing)"
-                )
-            else:
-                raise ConfigurationError(
-                    f"Device frame '{device_frame}' not found. "
-                    f"Frame is required when 'frame: true' is specified. "
-                    f"Check available frames or remove 'frame: true' from your "
-                    f"configuration."
-                )
-        else:
-            # No frame: canvas = scaled image + padding for text
-            canvas_width = max(
-                scaled_width + 400, 800
-            )  # Minimum width for text, extra space for text
-            canvas_height = scaled_height + 800  # Extra space for text above/below
-            logger.info(
-                "📐 Canvas: {canvas_width}×{canvas_height} (content-based sizing)"
-            )
 
         # Now process text overlays with correct canvas dimensions
         for item in screenshot_def.content:

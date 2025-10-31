@@ -87,7 +87,9 @@ class XCStringsManager:
                         "stringUnit": {"state": "needs_translation", "value": ""}
                     }
 
-            xcstrings_data["strings"][text_key] = {"localizations": localizations}
+            xcstrings_data["strings"][text_key] = {  # type: ignore[index]
+                "localizations": localizations
+            }
 
         self.xcstrings_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -139,7 +141,9 @@ class XCStringsManager:
                         "stringUnit": {"state": "needs_translation", "value": ""}
                     }
 
-            xcstrings_data["strings"][text_key] = {"localizations": localizations}
+            xcstrings_data["strings"][text_key] = {  # type: ignore[index]
+                "localizations": localizations
+            }
 
         # Write updated file
         with open(self.xcstrings_path, "w", encoding="utf-8") as f:
@@ -165,7 +169,9 @@ class XCStringsManager:
                 # If xcstrings file doesn't exist or is malformed, return original text
                 return text_key
 
-        strings_data = self._xcstrings_data.get("strings", {})
+        strings_data = self._xcstrings_data.get(  # type: ignore[union-attr]
+            "strings", {}
+        )
         if text_key not in strings_data:
             logger.warning(f"Text key '{text_key}' not found in XCStrings file")
             return text_key

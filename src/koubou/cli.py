@@ -55,8 +55,12 @@ def _create_config_file(output_file: Path, name: str) -> None:
 
     # Create sample configuration using real ProjectConfig format
     sample_config = {
-        "project": {"name": name, "output_dir": "Screenshots/Generated"},
-        "devices": ["iPhone 15 Pro Portrait"],
+        "project": {
+            "name": name,
+            "output_dir": "Screenshots/Generated",
+            "device": "iPhone 15 Pro Portrait",
+            "output_size": "iPhone6_9",
+        },
         "defaults": {
             "background": {
                 "type": "linear",
@@ -315,6 +319,56 @@ def generate(
         raise typer.Exit(1)
     except Exception as _e:
         console.print(f"❌ Unexpected error: {_e}", style="red")
+        if verbose:
+            console.print_exception()
+        raise typer.Exit(1)
+
+
+@app.command()
+def list_sizes(
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+) -> None:
+    """📏 List available App Store screenshot sizes"""
+    from rich.console import Console
+    from rich.table import Table
+
+    from .config import load_appstore_sizes
+
+    try:
+        console = Console()
+
+        # Load App Store sizes
+        sizes = load_appstore_sizes()
+
+        # Create table
+        table = Table(
+            title="📏 App Store Screenshot Sizes",
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Size Name", style="green")
+        table.add_column("Dimensions", style="yellow")
+        table.add_column("Description", style="white")
+
+        # Add rows
+        for size_name, size_info in sizes.items():
+            width = int(size_info["width"])
+            height = int(size_info["height"])
+            description = str(size_info["description"])
+            table.add_row(size_name, f"{width} × {height}", description)
+
+        console.print(table)
+        console.print(
+            f"\n📱 Found {len(sizes)} available App Store sizes",
+            style="bold green",
+        )
+        console.print(
+            '\n💡 Usage: Set output_size: "iPhone6_9" in your YAML config',
+            style="blue",
+        )
+
+    except Exception as e:
+        console.print(f"❌ Error listing sizes: {e}", style="red")
         if verbose:
             console.print_exception()
         raise typer.Exit(1)

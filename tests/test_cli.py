@@ -58,7 +58,8 @@ class TestCLI:
 
         assert config["project"]["name"] == "Test Project"
         assert config["project"]["output_dir"] == "Screenshots/Generated"
-        assert "devices" in config
+        assert config["project"]["device"] == "iPhone 15 Pro Portrait"
+        assert config["project"]["output_size"] == "iPhone6_9"
         assert "screenshots" in config
         assert (
             len(config["screenshots"]) == 3
@@ -77,8 +78,9 @@ class TestCLI:
             "project": {
                 "name": "CLI Test Project",
                 "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 15 - Black - Portrait",
+                "output_size": "iPhone6_9",
             },
-            "devices": ["iPhone 15 - Black - Portrait"],
             "screenshots": {
                 "cli_test_screenshot": {
                     "content": [

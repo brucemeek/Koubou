@@ -139,7 +139,7 @@ class LiveWatcher:
         self.debounce_delay = debounce_delay
 
         # File watching state
-        self._observer: Optional[Observer] = None
+        self._observer: Optional[Observer] = None  # type: ignore[valid-type]
         self._handler: Optional[DebounceHandler] = None
         self._watched_paths: Set[Path] = set()
         self._stop_event = Event()

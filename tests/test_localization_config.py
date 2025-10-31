@@ -168,10 +168,8 @@ class TestLocalizationConfigIntegration:
         project:
           name: "Multi-Language App Screenshots"
           output_dir: "Screenshots/Generated"
-
-        devices:
-          - "iPhone 15 Pro Portrait"
-          - "iPad Pro 12.9-inch Portrait"
+          device: "iPhone 15 Pro Portrait"
+          output_size: "iPhone6_9"
 
         defaults:
           background:
@@ -228,7 +226,8 @@ class TestLocalizationConfigIntegration:
 
         # Validate full configuration
         assert config.project.name == "Multi-Language App Screenshots"
-        assert len(config.devices) == 2
+        assert config.project.device == "iPhone 15 Pro Portrait"
+        assert config.project.output_size == (1320, 2868)  # iPhone6_9 resolved
         assert config.defaults is not None
         assert config.localization is not None
         assert len(config.localization.languages) == 5

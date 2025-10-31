@@ -113,6 +113,8 @@ Generate localized screenshots for international App Store submissions using xcs
 project:
   name: "My App Screenshots"
   output_dir: "Screenshots/Generated"
+  device: "iPhone 15 Pro Portrait"
+  output_size: "iPhone6_9"
 
 localization:
   base_language: "en"
@@ -201,6 +203,63 @@ Mix both approaches in the same screenshot as needed.
 
 ---
 
+## 📱 App Store Screenshot Sizes
+
+Koubou provides predefined App Store screenshot sizes configured at the project level. All screenshots in a single YAML file use the same output size.
+
+### Using Named Sizes
+
+Specify the output size once in your project configuration:
+
+```yaml
+project:
+  name: "My App Screenshots"
+  output_dir: "Screenshots/Generated"
+  device: "iPhone 15 Pro Portrait"
+  output_size: "iPhone6_9"  # All screenshots will be 1320×2868
+
+screenshots:
+  welcome_screen:
+    content:
+      - type: "image"
+        asset: "screenshots/home.png"
+```
+
+### Available Sizes
+
+View all available sizes with descriptions:
+
+```bash
+kou list-sizes
+```
+
+**Common Sizes:**
+- `iPhone6_9` - iPhone 16 Pro Max, 15 Pro Max (1320×2868)
+- `iPhone6_7` - iPhone 15/14/13/12 Pro Max, Plus (1290×2796)
+- `iPhone6_1` - iPhone 16/15/14/13 Pro (1179×2556)
+- `iPadPro12_9` - iPad Pro 12.9" (2048×2732)
+- `iPadPro11` - iPad Pro 11", iPad Air 11" M2 (1668×2388)
+
+### Custom Sizes
+
+You can still specify custom dimensions when needed:
+
+```yaml
+project:
+  name: "My App Screenshots"
+  device: "iPhone 15 Pro Portrait"
+  output_size: [1200, 2600]  # Custom width × height
+```
+
+### Multiple Sizes
+
+To generate screenshots for different sizes, create separate YAML files:
+- `iphone-6-9.yaml` - All iPhone 6.9" screenshots
+- `iphone-6-7.yaml` - All iPhone 6.7" screenshots
+- `ipad-pro.yaml` - All iPad Pro screenshots
+
+---
+
 ## 🎨 Configuration
 
 Create screenshots with YAML configuration:
@@ -209,9 +268,8 @@ Create screenshots with YAML configuration:
 project:
   name: "My Beautiful App"
   output_dir: "Screenshots/Generated"
-
-devices:
-  - "iPhone 15 Pro Portrait"
+  device: "iPhone 15 Pro Portrait"
+  output_size: "iPhone6_9"  # iPhone 16 Pro Max, 15 Pro Max
 
 defaults:
   background:
@@ -248,6 +306,7 @@ See the YAML API Reference below for all available options including gradients, 
 
 - `kou generate <config.yaml>` - Generate screenshots from configuration
 - `kou live <config.yaml>` - Live editing mode with real-time regeneration
+- `kou list-sizes` - List available App Store screenshot sizes
 - `kou --create-config <output.yaml>` - Create a sample configuration file
 - `kou --version` - Show version information
 - `kou --help` - Show detailed help
@@ -334,8 +393,8 @@ Koubou includes 100+ professionally crafted device frames:
 project:
   name: string               # Project name
   output_dir: string         # Output directory (default: "output")
-
-devices: [string, ...]       # Target device list (e.g., ["iPhone 15 Pro Portrait"])
+  device: string             # Target device frame (default: "iPhone 15 Pro Portrait")
+  output_size: string | [int, int]  # Named size ("iPhone6_9") or custom [width, height] (default: "iPhone6_9")
 
 defaults:                    # Default settings applied to all screenshots
   background:                # Default background configuration
