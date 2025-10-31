@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2025-10-31
+
+### Fixed
+- **CRITICAL**: Fixed device field default value bug that was silently overriding user-specified device values from YAML files
+- The `device` field now properly requires explicit configuration instead of using a hardcoded default
+- Users must ensure their YAML configs include the `device` field inside the `project:` section
+
+### Changed
+- Made `device` field required in `ProjectInfo` to prevent configuration issues
+- Updated all test fixtures to include explicit device field
+- All 308 tests passing
+
+### Testing
+- Verified fix with real-world Boxy YAML config files
+- Confirmed proper validation errors when device field is missing
+- All linters passing (black, isort, flake8, mypy)
+
 ## [0.10.0] - 2025-10-31
 
 ### Changed
