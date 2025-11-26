@@ -295,8 +295,8 @@ class ScreenshotGenerator:
         scaled_height = int(original_height * scale_factor)
 
         logger.info(
-            "📏 Scaling image: {original_width}×{original_height} → "
-            "{scaled_width}×{scaled_height} (scale: {scale_factor})"
+            f"📏 Scaling image: {original_width}×{original_height} → "
+            f"{scaled_width}×{scaled_height} (scale: {scale_factor})"
         )
 
         # Resize the source image
@@ -330,8 +330,8 @@ class ScreenshotGenerator:
         y = center_y - scaled_height // 2
 
         logger.info(
-            "📐 Positioning asset: center at {position} → "
-            "({center_x}, {center_y}), top-left at ({x}, {y})"
+            f"📐 Positioning asset: center at {position} → "
+            f"({center_x}, {center_y}), top-left at ({x}, {y})"
         )
 
         # Create positioned image
@@ -502,6 +502,13 @@ class ScreenshotGenerator:
 
             # Step 1: Fit source image to frame's screen area
             source_width, source_height = source_image.size
+
+            # Validate source dimensions to prevent division by zero
+            if source_width <= 0 or source_height <= 0:
+                raise ValueError(
+                    f"Invalid source image dimensions: {source_width}×{source_height}"
+                )
+
             scale_x = screen_width / source_width
             scale_y = screen_height / source_height
             fit_scale = min(scale_x, scale_y)  # Maintain aspect ratio

@@ -17,7 +17,6 @@ except Exception:
     # Development fallback when package not installed
     __version__ = "dev"
 __author__ = "David Collado"
-__email__ = "your-email@example.com"
 
 from .config import GradientConfig, ScreenshotConfig, TextOverlay
 from .exceptions import ConfigurationError, KoubouError, RenderError, TextGradientError
