@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+echo "Running pre-commit checks..."
+black --check src/ tests/
+isort --check src/ tests/
+flake8 src/ tests/
+pytest -x -q

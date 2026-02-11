@@ -344,27 +344,21 @@ kou --create-config config.yaml --name "My App Screenshots"
 ```
 
 #### Upload to App Store Connect
+
+For uploading screenshots, we recommend [App Store Connect CLI](https://github.com/rudrankriyam/App-Store-Connect-CLI):
+
 ```bash
-# Setup App Store Connect credentials (interactive)
-kou upload config.yaml --setup
+brew install appstoreconnect-cli
+asc auth login
 
-# Upload screenshots (replace existing - default)
-kou upload config.yaml
-
-# Upload screenshots (append to existing)
-kou upload config.yaml --mode append
-
-# Preview upload without uploading (dry run)
-kou upload config.yaml --dry-run
+# Upload per device type and language
+asc assets screenshots upload \
+  --version-localization "LOC_ID" \
+  --path "./output/en/iPhone_16_Pro_.../" \
+  --device-type "IPHONE_69"
 ```
 
-**Upload Modes:**
-- **replace** (default): Deletes all existing screenshots and uploads fresh set
-- **append**: Keeps existing screenshots and adds new ones
-
-**Requirements:**
-- App Store Connect API credentials (Key ID, Issuer ID, Private Key)
-- `appstore-config.json` file (created via `--setup`)
+Koubou outputs screenshots organized by `{language}/{device}/`, mapping directly to individual `asc` upload calls.
 
 ## 🎨 Device Frames
 

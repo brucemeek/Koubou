@@ -35,12 +35,6 @@ class TestCLI:
         assert result.exit_code == 0
         assert "Koubou" in result.stdout
 
-    def test_version_short_flag(self):
-        """Test -v flag."""
-        result = self.runner.invoke(app, ["-v"])
-        assert result.exit_code == 0
-        assert "Koubou" in result.stdout
-
     def test_create_config_option(self):
         """Test --create-config option."""
         config_path = self.temp_dir / "test_config.yaml"

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-02-11
+
+### Removed
+- **BREAKING**: Removed `upload` command and all App Store Connect upload code
+- Removed `pyjwt`, `cryptography`, `httpx` dependencies
+- Removed `responses`, `pytest-httpx` dev dependencies
+- Removed `src/koubou/appstore/` module (auth, client, uploader)
+- Removed all upload-related tests
+- Removed interactive prompts (`typer.confirm`)
+- Removed single-letter flag abbreviations (`-v`, `-n`, `-m`)
+
+### Added
+- `--output json` flag for `generate`, `list-sizes`, `list-frames` commands
+- `--force` flag to overwrite existing files in `--create-config`
+- `AGENTS.md` with agent-first CLI documentation
+- `Makefile` with standard development targets (`format`, `lint`, `test`, `check`)
+- `.githooks/pre-commit` hook (activate with `make install-hooks`)
+- JSON output sends structured data to stdout, progress/errors to stderr
+
+### Changed
+- Upload workflow now recommends [App Store Connect CLI](https://github.com/rudrankriyam/App-Store-Connect-CLI) (`asc`)
+- All CLI flags are explicit (no abbreviations) for unambiguous agent usage
+- Updated README and CLAUDE.md documentation
+
+### Testing
+- 245 tests passing
+- All linters passing (black, isort, flake8, mypy)
+
 ## [0.10.3] - 2025-11-27
 
 ### Changed
@@ -329,7 +357,8 @@ For multiple devices, create separate YAML files (e.g., `iphone-6-9.yaml`, `ipad
 - PyPI distribution
 - GitHub Actions CI/CD pipeline
 
-[Unreleased]: https://github.com/bitomule/koubou/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/bitomule/koubou/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/bitomule/koubou/compare/v0.10.3...v0.11.0
 [0.10.3]: https://github.com/bitomule/koubou/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/bitomule/koubou/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/bitomule/koubou/compare/v0.10.0...v0.10.1
