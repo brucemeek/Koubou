@@ -558,10 +558,6 @@ class ScreenshotGenerator:
             center_x = self._convert_percentage_to_pixels(position[0], canvas.width)
             center_y = self._convert_percentage_to_pixels(position[1], canvas.height)
 
-            # Frame position (centered at specified location)
-            frame_x = center_x - scaled_frame_width // 2
-            frame_y = center_y - scaled_frame_height // 2
-
             # Source position (centered within frame's screen area)
             scaled_screen_x = int(screen_x * asset_scale)
             scaled_screen_y = int(screen_y * asset_scale)
@@ -572,33 +568,52 @@ class ScreenshotGenerator:
             source_offset_x = (scaled_screen_width - final_source_width) // 2
             source_offset_y = (scaled_screen_height - final_source_height) // 2
 
-            source_x = frame_x + scaled_screen_x + source_offset_x
-            source_y = frame_y + scaled_screen_y + source_offset_y
+            source_local_x = scaled_screen_x + source_offset_x
+            source_local_y = scaled_screen_y + source_offset_y
 
-            logger.info(
-                f"📱 Positioning: frame at ({frame_x}, {frame_y}), "
-                f"source at ({source_x}, {source_y})"
+            # Step 5: Build framed asset in frame-local coordinates
+            framed_asset = Image.new(
+                "RGBA", (scaled_frame_width, scaled_frame_height), (255, 255, 255, 0)
+            )
+            framed_asset.paste(
+                final_source, (source_local_x, source_local_y), final_source
             )
 
-            # Step 5: Compose the result
+            # Clip source to the screen area with anti-aliased mask
+            transparent_frame_bg = Image.new(
+                "RGBA", (scaled_frame_width, scaled_frame_height), (255, 255, 255, 0)
+            )
+            framed_asset = Image.composite(framed_asset, transparent_frame_bg, screen_mask)
+
+            # Overlay frame bezel on top of clipped source
+            framed_asset = Image.alpha_composite(framed_asset, scaled_frame)
+
+            # Step 6: Apply optional rotation to the whole framed asset
+            rotation_angle = getattr(config, "image_rotation", 0) or 0
+            if rotation_angle != 0:
+                logger.info(f"🔄 Rotating framed asset by {rotation_angle}°")
+                framed_asset = framed_asset.rotate(
+                    -rotation_angle,  # Negative for clockwise rotation
+                    resample=Image.Resampling.BICUBIC,
+                    expand=True,
+                )
+
+            # Step 7: Place framed asset on canvas centered at requested position
+            framed_width, framed_height = framed_asset.size
+            frame_x = center_x - framed_width // 2
+            frame_y = center_y - framed_height // 2
+
+            logger.info(
+                f"📱 Positioning framed asset: center at ({center_x}, {center_y}), "
+                f"top-left at ({frame_x}, {frame_y})"
+            )
+
             result = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
+            result.paste(framed_asset, (frame_x, frame_y), framed_asset)
 
-            # Paste source image at calculated position
-            result.paste(final_source, (source_x, source_y), final_source)
-
-            # Apply screen mask to clip content
-            canvas_mask = Image.new("L", canvas.size, 0)
-            canvas_mask.paste(screen_mask, (frame_x, frame_y))
-
-            transparent_bg = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
-            result = Image.composite(result, transparent_bg, canvas_mask)
-
-            # Overlay frame on top
-            frame_overlay = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
-            frame_overlay.paste(scaled_frame, (frame_x, frame_y), scaled_frame)
-            result = Image.alpha_composite(result, frame_overlay)
-
-            logger.info("📱 Applied device frame with proper fitting and masking")
+            logger.info(
+                "📱 Applied device frame with proper fitting, masking, and rotation"
+            )
             return result
 
         except Exception as e:

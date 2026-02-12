@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from koubou.config import ContentItem, GradientConfig, ScreenshotConfig, TextOverlay
 from koubou.generator import ScreenshotGenerator
@@ -302,6 +302,51 @@ class TestImageRotation:
         pixels = list(positioned_image.getdata())
         semi_transparent_pixels = [p for p in pixels if 0 < p[3] < 255]  # Partial alpha
         assert len(semi_transparent_pixels) > 0, "Transparency should be preserved"
+
+    def test_framed_image_rotation_rotates_entire_framed_asset(self):
+        """Test that rotation applies when image frame is enabled."""
+        frame_dir = self.temp_dir / "frames"
+        frame_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build a synthetic frame:
+        # - Outer area transparent
+        # - Bezel opaque
+        # - Screen area transparent
+        frame_image = Image.new("RGBA", (220, 360), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(frame_image)
+        draw.rectangle((20, 20, 200, 340), fill=(30, 30, 30, 255))
+        draw.rectangle((36, 48, 184, 312), fill=(0, 0, 0, 0))
+        frame_image.save(frame_dir / "Test Frame.png")
+
+        generator = ScreenshotGenerator(frame_directory=str(frame_dir))
+        canvas = Image.new("RGBA", (500, 500), (255, 255, 255, 0))
+        source_image = Image.new("RGBA", (120, 220), (255, 0, 0, 255))
+
+        class NoRotationConfig:
+            device_frame = "Test Frame"
+            image_scale = 1.0
+            image_position = ["50%", "50%"]
+            image_rotation = 0
+
+        class RotationConfig:
+            device_frame = "Test Frame"
+            image_scale = 1.0
+            image_position = ["50%", "50%"]
+            image_rotation = 18
+
+        unrotated_result = generator._apply_asset_frame(
+            source_image, canvas, NoRotationConfig()
+        )
+        rotated_result = generator._apply_asset_frame(
+            source_image, canvas, RotationConfig()
+        )
+
+        assert rotated_result.size == canvas.size
+        assert rotated_result.getbbox() is not None
+
+        # Rotating the entire framed asset should change the rendered output/bounds
+        assert rotated_result.tobytes() != unrotated_result.tobytes()
+        assert rotated_result.getbbox() != unrotated_result.getbbox()
 
 
 class TestRotationIntegration:
