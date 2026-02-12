@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-02-11
+
+### Fixed
+- Frame-aware image rotation: `rotation` now applies to the entire framed asset (screen content + bezel) instead of being ignored when `frame: true`
+
+### Changed
+- Refactored `_apply_asset_frame` to compose framed assets in local coordinates before canvas placement, improving clarity and enabling rotation support
+
+### Testing
+- 246 tests passing
+- Added regression test for framed image rotation
+
 ## [0.11.0] - 2026-02-11
 
 ### Removed
@@ -357,7 +369,8 @@ For multiple devices, create separate YAML files (e.g., `iphone-6-9.yaml`, `ipad
 - PyPI distribution
 - GitHub Actions CI/CD pipeline
 
-[Unreleased]: https://github.com/bitomule/koubou/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bitomule/koubou/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/bitomule/koubou/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bitomule/koubou/compare/v0.10.3...v0.11.0
 [0.10.3]: https://github.com/bitomule/koubou/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/bitomule/koubou/compare/v0.10.1...v0.10.2
