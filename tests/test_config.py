@@ -229,7 +229,7 @@ class TestContentItemZoom:
             )
 
     def test_zoom_missing_display_size_raises(self):
-        with pytest.raises(ValidationError, match="display_size"):
+        with pytest.raises(ValidationError, match="display_size.*zoom_level"):
             ContentItem(
                 type="zoom",
                 source_position=("65%", "45%"),
@@ -270,6 +270,189 @@ class TestContentItemZoom:
         )
         assert item.connector is True
         assert item.connector_color == "#FF0000"
+
+    def test_zoom_with_zoom_level(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            zoom_level=2.5,
+        )
+        assert item.zoom_level == 2.5
+        assert item.display_size is None
+
+    def test_zoom_with_zoom_level_and_display_size(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            display_size=("30%", "30%"),
+            zoom_level=2.5,
+        )
+        assert item.zoom_level == 2.5
+        assert item.display_size == ("30%", "30%")
+
+    def test_zoom_connector_styles(self):
+        for style in ["straight", "curved", "facing"]:
+            item = ContentItem(
+                type="zoom",
+                source_position=("50%", "50%"),
+                source_size=("10%", "10%"),
+                display_size=("30%", "30%"),
+                connector=True,
+                connector_style=style,
+            )
+            assert item.connector_style == style
+
+    def test_zoom_connector_fill(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            display_size=("30%", "30%"),
+            connector=True,
+            connector_style="facing",
+            connector_fill="#007AFF20",
+        )
+        assert item.connector_fill == "#007AFF20"
+
+    def test_zoom_invalid_connector_fill(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="zoom",
+                source_position=("50%", "50%"),
+                source_size=("10%", "10%"),
+                display_size=("30%", "30%"),
+                connector_fill="blue",
+            )
+
+    def test_zoom_source_indicator_defaults(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            display_size=("30%", "30%"),
+        )
+        assert item.source_indicator is True
+        assert item.source_indicator_style == "border"
+
+    def test_zoom_source_indicator_styles(self):
+        for style in ["border", "dashed", "fill"]:
+            item = ContentItem(
+                type="zoom",
+                source_position=("50%", "50%"),
+                source_size=("10%", "10%"),
+                display_size=("30%", "30%"),
+                source_indicator_style=style,
+            )
+            assert item.source_indicator_style == style
+
+
+class TestContentItemShadow:
+    """Tests for shadow fields on ContentItem."""
+
+    def test_shadow_defaults(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+        )
+        assert item.shadow is False
+        assert item.shadow_color == "#00000040"
+        assert item.shadow_blur == 15
+        assert item.shadow_offset == ("0", "6")
+
+    def test_shadow_custom(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+            shadow=True,
+            shadow_color="#FF000080",
+            shadow_blur=20,
+            shadow_offset=("5", "10"),
+        )
+        assert item.shadow is True
+        assert item.shadow_color == "#FF000080"
+        assert item.shadow_blur == 20
+        assert item.shadow_offset == ("5", "10")
+
+    def test_shadow_invalid_color(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="highlight",
+                shape="circle",
+                position=("50%", "50%"),
+                shadow_color="red",
+            )
+
+
+class TestContentItemSpotlight:
+    """Tests for spotlight fields on ContentItem."""
+
+    def test_spotlight_defaults(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+        )
+        assert item.spotlight is False
+        assert item.spotlight_color == "#000000"
+        assert item.spotlight_opacity == 0.5
+
+    def test_spotlight_custom(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+            spotlight=True,
+            spotlight_color="#0000FF",
+            spotlight_opacity=0.7,
+        )
+        assert item.spotlight is True
+        assert item.spotlight_opacity == 0.7
+
+    def test_spotlight_invalid_color(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="highlight",
+                shape="circle",
+                position=("50%", "50%"),
+                spotlight_color="invalid",
+            )
+
+    def test_spotlight_opacity_out_of_range(self):
+        with pytest.raises(ValidationError, match="between 0.0 and 1.0"):
+            ContentItem(
+                type="highlight",
+                shape="circle",
+                position=("50%", "50%"),
+                spotlight_opacity=1.5,
+            )
+
+
+class TestContentItemBlurBackground:
+    """Tests for blur background fields on ContentItem."""
+
+    def test_blur_defaults(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+        )
+        assert item.blur_background is False
+        assert item.blur_radius == 20
+
+    def test_blur_custom(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+            blur_background=True,
+            blur_radius=30,
+        )
+        assert item.blur_background is True
+        assert item.blur_radius == 30
 
 
 class TestProjectConfig:

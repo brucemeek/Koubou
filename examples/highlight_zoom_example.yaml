@@ -1,11 +1,11 @@
-# 🎯 Koubou Highlight & Zoom Example
-# This demonstrates highlight annotations and zoom callout features
+# Koubou Highlight & Zoom Example
+# Demonstrates highlight annotations and zoom callout features
 
 project:
   name: "Highlight & Zoom Showcase"
   output_dir: "output"
   device: "iPhone 16 Pro - Black Titanium - Portrait"
-  output_size: "iPhone6_9"  # 1320×2868
+  output_size: "iPhone6_9"  # 1320x2868
 
 defaults:
   background:
@@ -52,6 +52,61 @@ screenshots:
         size: 28
         color: "#ffffffcc"
 
+  spotlight_demo:
+    content:
+      - type: "image"
+        asset: "screenshots/app_screen.png"
+        position: ["50%", "55%"]
+        scale: 0.85
+
+      # Spotlight mode: dims everything except the highlighted area
+      - type: "highlight"
+        shape: "rounded_rect"
+        position: ["50%", "45%"]
+        dimensions: ["60%", "15%"]
+        border_color: "#FF9500"
+        border_width: 4
+        corner_radius: 20
+        spotlight: true
+        spotlight_opacity: 0.6
+
+      - type: "text"
+        content: "Spotlight Mode"
+        position: ["50%", "10%"]
+        size: 56
+        color: "#ffffff"
+        weight: "bold"
+
+      - type: "text"
+        content: "Dim everything except the focus area"
+        position: ["50%", "16%"]
+        size: 28
+        color: "#ffffffcc"
+
+  blur_demo:
+    content:
+      - type: "image"
+        asset: "screenshots/app_screen.png"
+        position: ["50%", "55%"]
+        scale: 0.85
+
+      # Blur background: blur everything outside the highlight
+      - type: "highlight"
+        shape: "circle"
+        position: ["50%", "50%"]
+        dimensions: ["40%", "20%"]
+        border_color: "#007AFF"
+        border_width: 4
+        blur_background: true
+        blur_radius: 25
+
+      - type: "text"
+        content: "Blur Background"
+        position: ["50%", "10%"]
+        size: 56
+        color: "#ffffff"
+        weight: "bold"
+
   zoom_demo:
     content:
       - type: "image"
@@ -59,7 +114,7 @@ screenshots:
         position: ["50%", "55%"]
         scale: 0.85
 
-      # Zoom into the price of the Smart Watch product
+      # Zoom with shadow, source indicator, and facing connector
       - type: "zoom"
         source_position: ["72%", "38%"]
         source_size: ["22%", "5%"]
@@ -69,9 +124,16 @@ screenshots:
         border_color: "#007AFF"
         border_width: 5
         corner_radius: 24
+        shadow: true
+        shadow_blur: 20
+        shadow_offset: ["0", "8"]
+        source_indicator: true
+        source_indicator_style: "border"
         connector: true
-        connector_color: "#007AFF"
-        connector_width: 3
+        connector_style: "facing"
+        connector_color: "#007AFF80"
+        connector_width: 2
+        connector_fill: "#007AFF10"
 
       - type: "text"
         content: "Zoom Into Details"
@@ -81,7 +143,42 @@ screenshots:
         weight: "bold"
 
       - type: "text"
-        content: "Magnify any area of your screenshot"
+        content: "Magnify any area with source indicator"
+        position: ["50%", "16%"]
+        size: 28
+        color: "#ffffffcc"
+
+  zoom_level_demo:
+    content:
+      - type: "image"
+        asset: "screenshots/app_screen.png"
+        position: ["50%", "55%"]
+        scale: 0.85
+
+      # Zoom using zoom_level shorthand (auto-calculates display_size)
+      - type: "zoom"
+        source_position: ["50%", "45%"]
+        source_size: ["15%", "8%"]
+        display_position: ["50%", "82%"]
+        zoom_level: 2.5
+        shape: "circle"
+        border_color: "#FF3B30"
+        border_width: 4
+        shadow: true
+        connector: true
+        connector_style: "curved"
+        connector_color: "#FF3B3080"
+        connector_width: 2
+
+      - type: "text"
+        content: "Zoom Level Shorthand"
+        position: ["50%", "10%"]
+        size: 56
+        color: "#ffffff"
+        weight: "bold"
+
+      - type: "text"
+        content: "Just set zoom_level: 2.5 for 2.5x magnification"
         position: ["50%", "16%"]
         size: 28
         color: "#ffffffcc"
@@ -97,7 +194,7 @@ screenshots:
         position: ["50%", "50%"]
         scale: 0.78
 
-      # Highlight the product grid area
+      # Highlight the product grid area with shadow
       - type: "highlight"
         shape: "rounded_rect"
         position: ["50%", "35%"]
@@ -106,8 +203,9 @@ screenshots:
         border_width: 4
         fill_color: "#FF950015"
         corner_radius: 24
+        shadow: true
 
-      # Zoom into the Wireless Earbuds price
+      # Zoom into the Wireless Earbuds price with facing connector
       - type: "zoom"
         source_position: ["32%", "38%"]
         source_size: ["18%", "4%"]
@@ -117,9 +215,14 @@ screenshots:
         border_color: "#FF9500"
         border_width: 4
         corner_radius: 20
+        shadow: true
         connector: true
+        connector_style: "facing"
         connector_color: "#FF950080"
         connector_width: 2
+        connector_fill: "#FF950010"
+        source_indicator: true
+        source_indicator_style: "dashed"
 
       - type: "text"
         content: "Highlight + Zoom"

@@ -366,6 +366,37 @@ class ContentItem(BaseModel):
         default=16, description="Corner radius for rounded_rect shape"
     )
 
+    # Shadow (shared highlight + zoom)
+    shadow: Optional[bool] = Field(default=False, description="Enable drop shadow")
+    shadow_color: Optional[str] = Field(
+        default="#00000040", description="Shadow color with alpha"
+    )
+    shadow_blur: Optional[int] = Field(
+        default=15, description="Gaussian blur radius for shadow"
+    )
+    shadow_offset: Optional[Tuple[str, str]] = Field(
+        default=("0", "6"), description="Shadow X, Y offset in px"
+    )
+
+    # Spotlight (highlight only)
+    spotlight: Optional[bool] = Field(
+        default=False, description="Enable spotlight mode (dim background)"
+    )
+    spotlight_color: Optional[str] = Field(
+        default="#000000", description="Spotlight overlay color"
+    )
+    spotlight_opacity: Optional[float] = Field(
+        default=0.5, description="Spotlight overlay opacity 0.0-1.0"
+    )
+
+    # Blur background (highlight only)
+    blur_background: Optional[bool] = Field(
+        default=False, description="Blur non-highlighted area"
+    )
+    blur_radius: Optional[int] = Field(
+        default=20, description="Gaussian blur radius for background blur"
+    )
+
     # Zoom-specific fields
     source_position: Optional[Tuple[str, str]] = Field(
         default=None, description="Center of area to magnify (% or px)"
@@ -379,6 +410,20 @@ class ContentItem(BaseModel):
     display_size: Optional[Tuple[str, str]] = Field(
         default=None, description="Size of magnified bubble (% or px)"
     )
+    zoom_level: Optional[float] = Field(
+        default=None,
+        description="Auto-calculate display_size as source_size * zoom_level",
+    )
+
+    # Source indicator (zoom only)
+    source_indicator: Optional[bool] = Field(
+        default=True, description="Show outline on source region"
+    )
+    source_indicator_style: Optional[Literal["border", "dashed", "fill"]] = Field(
+        default="border", description="Source indicator style"
+    )
+
+    # Connector fields (zoom only)
     connector: Optional[bool] = Field(
         default=False, description="Draw connector line from source to display"
     )
@@ -387,6 +432,12 @@ class ContentItem(BaseModel):
     )
     connector_width: Optional[int] = Field(
         default=2, description="Connector line width in pixels"
+    )
+    connector_style: Optional[Literal["straight", "curved", "facing"]] = Field(
+        default="straight", description="Connector rendering style"
+    )
+    connector_fill: Optional[str] = Field(
+        default=None, description="Fill color between facing connector lines"
     )
 
     @field_validator("color")
@@ -462,6 +513,34 @@ class ContentItem(BaseModel):
             validate_hex_color(v, "Connector color")
         return v
 
+    @field_validator("connector_fill")
+    @classmethod
+    def validate_connector_fill_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Connector fill")
+        return v
+
+    @field_validator("shadow_color")
+    @classmethod
+    def validate_shadow_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Shadow color")
+        return v
+
+    @field_validator("spotlight_color")
+    @classmethod
+    def validate_spotlight_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Spotlight color")
+        return v
+
+    @field_validator("spotlight_opacity")
+    @classmethod
+    def validate_spotlight_opacity_range(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and (v < 0.0 or v > 1.0):
+            raise ValueError("Spotlight opacity must be between 0.0 and 1.0")
+        return v
+
     @model_validator(mode="after")
     def validate_type_required_fields(self):
         if self.type == "highlight":
@@ -472,8 +551,9 @@ class ContentItem(BaseModel):
                 raise ValueError("Zoom items require 'source_position'")
             if self.source_size is None:
                 raise ValueError("Zoom items require 'source_size'")
-            if self.display_size is None:
-                raise ValueError("Zoom items require 'display_size'")
+            # display_size is optional if zoom_level is set
+            if self.display_size is None and self.zoom_level is None:
+                raise ValueError("Zoom items require 'display_size' or 'zoom_level'")
         return self
 
     @field_validator("asset")

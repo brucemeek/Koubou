@@ -19,11 +19,8 @@ class TestHighlightRenderer:
             "border_width": 4,
         }
         self.renderer.render(config, self.canvas)
-        # Border should have been drawn - check center-top of ellipse for red
-        # The ellipse top is at cy - h//2 = 400 - 60 = 340
-        # With border width 4, pixels around boundary should be colored
         pixel = self.canvas.getpixel((200, 340))
-        assert pixel[0] > 200  # Red channel should be strong near border
+        assert pixel[0] > 200
 
     def test_rounded_rect_highlight(self):
         config = {
@@ -35,7 +32,6 @@ class TestHighlightRenderer:
             "corner_radius": 16,
         }
         self.renderer.render(config, self.canvas)
-        # Center should still be white (no fill)
         pixel = self.canvas.getpixel((200, 400))
         assert pixel == (255, 255, 255, 255)
 
@@ -48,9 +44,8 @@ class TestHighlightRenderer:
             "border_width": 4,
         }
         self.renderer.render(config, self.canvas)
-        # Top edge of rectangle: cy - h//2 = 400 - 120 = 280, at x=200
         pixel = self.canvas.getpixel((200, 280))
-        assert pixel[2] > 200  # Blue channel should be strong at border
+        assert pixel[2] > 200
 
     def test_highlight_with_fill(self):
         config = {
@@ -62,9 +57,8 @@ class TestHighlightRenderer:
             "fill_color": "#00FF0080",
         }
         self.renderer.render(config, self.canvas)
-        # Center should have green fill blended with white background
         pixel = self.canvas.getpixel((200, 400))
-        assert pixel[1] > pixel[0]  # Green channel should dominate over red
+        assert pixel[1] > pixel[0]
 
     def test_highlight_border_only_no_fill(self):
         config = {
@@ -75,7 +69,6 @@ class TestHighlightRenderer:
             "border_width": 3,
         }
         self.renderer.render(config, self.canvas)
-        # Center should remain white (no fill)
         pixel = self.canvas.getpixel((200, 400))
         assert pixel == (255, 255, 255, 255)
 
@@ -88,7 +81,6 @@ class TestHighlightRenderer:
             "border_width": 2,
         }
         self.renderer.render(config, self.canvas)
-        # Top edge at y=175, should have red border
         pixel = self.canvas.getpixel((100, 175))
         assert pixel[0] > 200
 
@@ -100,10 +92,7 @@ class TestHighlightRenderer:
             "border_color": "#FF0000",
             "border_width": 3,
         }
-        # 25% of 400 = 100, 25% of 800 = 200
-        # dimensions: 10% of 400 = 40, 10% of 800 = 80
         self.renderer.render(config, self.canvas)
-        # Border at top edge: y = 200 - 40 = 160
         pixel = self.canvas.getpixel((100, 160))
         assert pixel[0] > 200
 
@@ -116,5 +105,164 @@ class TestHighlightRenderer:
             "border_width": 10,
         }
         self.renderer.render(config, self.canvas)
-        # Should complete without error
         assert self.canvas.size == (400, 800)
+
+
+class TestHighlightShadow:
+    def setup_method(self):
+        self.renderer = HighlightRenderer()
+        self.canvas = Image.new("RGBA", (400, 800), (255, 255, 255, 255))
+
+    def test_shadow_enabled(self):
+        config = {
+            "shape": "rect",
+            "position": ("50%", "50%"),
+            "dimensions": ("40%", "30%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "shadow": True,
+        }
+        self.renderer.render(config, self.canvas)
+        # Shadow should darken pixels below the shape
+        # Shape bottom edge: cy + h//2 = 400 + 120 = 520
+        # Shadow offset default (0,6) + blur should affect pixels below
+        pixel = self.canvas.getpixel((200, 540))
+        assert pixel != (255, 255, 255, 255)
+
+    def test_shadow_custom_params(self):
+        config = {
+            "shape": "circle",
+            "position": ("50%", "50%"),
+            "dimensions": ("30%", "30%"),
+            "border_color": "#0000FF",
+            "border_width": 3,
+            "shadow": True,
+            "shadow_color": "#FF000080",
+            "shadow_blur": 20,
+            "shadow_offset": ("10", "10"),
+        }
+        self.renderer.render(config, self.canvas)
+        assert self.canvas.size == (400, 800)
+
+    def test_shadow_disabled_no_effect(self):
+        config = {
+            "shape": "rect",
+            "position": ("50%", "50%"),
+            "dimensions": ("20%", "20%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "shadow": False,
+        }
+        canvas_before = self.canvas.copy()
+        self.renderer.render(config, self.canvas)
+        # Compare a pixel far from the shape
+        assert self.canvas.getpixel((10, 10)) == canvas_before.getpixel((10, 10))
+
+
+class TestHighlightSpotlight:
+    def setup_method(self):
+        self.renderer = HighlightRenderer()
+        self.canvas = Image.new("RGBA", (400, 800), (255, 255, 255, 255))
+
+    def test_spotlight_dims_background(self):
+        config = {
+            "shape": "rect",
+            "position": ("50%", "50%"),
+            "dimensions": ("40%", "30%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "spotlight": True,
+            "spotlight_opacity": 0.5,
+        }
+        self.renderer.render(config, self.canvas)
+        # Corner should be dimmed (not pure white)
+        pixel = self.canvas.getpixel((10, 10))
+        assert pixel[0] < 255
+
+    def test_spotlight_preserves_highlight_center(self):
+        config = {
+            "shape": "rect",
+            "position": ("200", "400"),
+            "dimensions": ("100", "100"),
+            "border_color": "#FF0000",
+            "border_width": 2,
+            "spotlight": True,
+            "spotlight_opacity": 0.5,
+        }
+        self.renderer.render(config, self.canvas)
+        # Center of highlight should remain white (not dimmed)
+        pixel = self.canvas.getpixel((200, 400))
+        assert pixel[0] == 255
+        assert pixel[1] == 255
+        assert pixel[2] == 255
+
+    def test_spotlight_custom_color(self):
+        config = {
+            "shape": "circle",
+            "position": ("50%", "50%"),
+            "dimensions": ("30%", "30%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "spotlight": True,
+            "spotlight_color": "#0000FF",
+            "spotlight_opacity": 0.5,
+        }
+        self.renderer.render(config, self.canvas)
+        # Corner should have blue tint
+        pixel = self.canvas.getpixel((10, 10))
+        assert pixel[2] > pixel[0]
+
+
+class TestHighlightBlurBackground:
+    def setup_method(self):
+        self.renderer = HighlightRenderer()
+        # Create canvas with a sharp pattern (alternating stripes)
+        self.canvas = Image.new("RGBA", (400, 800), (255, 255, 255, 255))
+        for x in range(0, 400, 2):
+            for y in range(800):
+                self.canvas.putpixel((x, y), (0, 0, 0, 255))
+
+    def test_blur_background_applied(self):
+        config = {
+            "shape": "rect",
+            "position": ("50%", "50%"),
+            "dimensions": ("40%", "30%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "blur_background": True,
+            "blur_radius": 20,
+        }
+        self.renderer.render(config, self.canvas)
+        # Corner should be blurred (grey-ish, not pure black or white)
+        pixel = self.canvas.getpixel((10, 10))
+        assert 50 < pixel[0] < 200
+
+    def test_blur_preserves_highlight_area(self):
+        config = {
+            "shape": "rect",
+            "position": ("200", "400"),
+            "dimensions": ("100", "100"),
+            "border_color": "#FF0000",
+            "border_width": 2,
+            "blur_background": True,
+            "blur_radius": 20,
+        }
+        self.renderer.render(config, self.canvas)
+        # Inside highlight, the sharp pattern should remain
+        # At x=200 (even), should still be black
+        pixel = self.canvas.getpixel((200, 400))
+        assert pixel[0] == 0
+
+    def test_blur_disabled(self):
+        config = {
+            "shape": "rect",
+            "position": ("50%", "50%"),
+            "dimensions": ("20%", "20%"),
+            "border_color": "#FF0000",
+            "border_width": 3,
+            "blur_background": False,
+        }
+        self.renderer.render(config, self.canvas)
+        # Corner should remain sharp (either 0 or 255)
+        pixel = self.canvas.getpixel((10, 10))
+        assert pixel[0] == 0 or pixel[0] == 255

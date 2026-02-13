@@ -910,6 +910,15 @@ class ScreenshotGenerator:
                     "border_width": item.border_width,
                     "fill_color": item.fill_color,
                     "corner_radius": item.corner_radius,
+                    "shadow": item.shadow,
+                    "shadow_color": item.shadow_color,
+                    "shadow_blur": item.shadow_blur,
+                    "shadow_offset": item.shadow_offset,
+                    "spotlight": item.spotlight,
+                    "spotlight_color": item.spotlight_color,
+                    "spotlight_opacity": item.spotlight_opacity,
+                    "blur_background": item.blur_background,
+                    "blur_radius": item.blur_radius,
                 }
                 highlight_configs.append(hl)
 
@@ -926,6 +935,15 @@ class ScreenshotGenerator:
                     "connector": item.connector,
                     "connector_color": item.connector_color,
                     "connector_width": item.connector_width,
+                    "connector_style": item.connector_style,
+                    "connector_fill": item.connector_fill,
+                    "shadow": item.shadow,
+                    "shadow_color": item.shadow_color,
+                    "shadow_blur": item.shadow_blur,
+                    "shadow_offset": item.shadow_offset,
+                    "source_indicator": item.source_indicator,
+                    "source_indicator_style": item.source_indicator_style,
+                    "zoom_level": item.zoom_level,
                 }
                 zoom_configs.append(zm)
 

@@ -20,8 +20,9 @@
 - **🌈 Gradient Typography** - Linear, radial, and conic gradients for text with custom color stops
 - **📱 YAML-First Configuration** - Elegant, declarative screenshot definitions
 - **🚀 Batch Processing** - Generate multiple screenshots efficiently from a single config
-- **🔦 Highlight Annotations** - Circle, rounded rect, and rect shapes to draw attention to UI elements
-- **🔍 Zoom Callouts** - Magnified callout bubbles with connector lines to showcase details
+- **🔦 Highlight Annotations** - Circle, rounded rect, and rect shapes with spotlight dimming and background blur
+- **🔍 Zoom Callouts** - Magnified callout bubbles with source indicators, advanced connectors (straight/curved/facing), and drop shadows
+- **✨ Anti-Aliased Rendering** - Supersampled shape rendering for smooth edges at any resolution
 - **🔧 Flexible API** - Both simple and advanced configuration options
 - **💎 Artisan Quality** - Pixel-perfect output ready for App Store submission
 
@@ -472,20 +473,38 @@ background:
   border_width: int?         # Border width in pixels (default: 3)
   fill_color: string?        # Fill color in hex, supports alpha (e.g., "#FF3B3020")
   corner_radius: int?        # Corner radius for rounded_rect (default: 16)
+  shadow: bool?              # Enable drop shadow (default: false)
+  shadow_color: string?      # Shadow color with alpha (default: "#00000040")
+  shadow_blur: int?          # Shadow blur radius (default: 15)
+  shadow_offset: [string, string]? # Shadow X,Y offset (default: ["0", "6"])
+  spotlight: bool?           # Dim everything except highlight (default: false)
+  spotlight_color: string?   # Overlay color (default: "#000000")
+  spotlight_opacity: float?  # Overlay opacity 0.0-1.0 (default: 0.5)
+  blur_background: bool?     # Blur outside highlight area (default: false)
+  blur_radius: int?          # Background blur radius (default: 20)
 
 # Zoom Content Item
 - type: "zoom"
   source_position: [string, string]  # Center of area to magnify (required)
   source_size: [string, string]      # Crop region size (required)
   display_position: [string, string] # Where magnified view appears
-  display_size: [string, string]     # Size of magnified bubble (required)
+  display_size: [string, string]     # Size of magnified bubble (or use zoom_level)
+  zoom_level: float?         # Auto-calculate display_size (e.g., 2.5 = 2.5x)
   shape: "circle" | "rounded_rect"   # Bubble shape (default: "circle")
   border_color: string?      # Border color in hex
   border_width: int?         # Border width (default: 3)
   corner_radius: int?        # For rounded_rect (default: 16)
+  shadow: bool?              # Enable drop shadow (default: false)
+  shadow_color: string?      # Shadow color with alpha (default: "#00000040")
+  shadow_blur: int?          # Shadow blur radius (default: 15)
+  shadow_offset: [string, string]? # Shadow X,Y offset (default: ["0", "6"])
+  source_indicator: bool?    # Show outline on source region (default: true)
+  source_indicator_style: string? # "border" | "dashed" | "fill" (default: "border")
   connector: bool?           # Draw line from source to display (default: false)
+  connector_style: string?   # "straight" | "curved" | "facing" (default: "straight")
   connector_color: string?   # Line color (defaults to border_color)
   connector_width: int?      # Line width (default: 2)
+  connector_fill: string?    # Fill color between facing connector lines
 ```
 
 ## 🏗️ Architecture

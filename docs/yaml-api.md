@@ -259,7 +259,7 @@ gradient:
 
 ### Highlight Content Item
 
-Draw annotation shapes to highlight areas of the screenshot. Rendered after images and before text.
+Draw annotation shapes to highlight areas of the screenshot. Supports spotlight dimming, background blur, and drop shadows. All shapes are anti-aliased via 2x supersampling. Rendered after images and before text.
 
 ```yaml
 - type: "highlight"
@@ -270,10 +270,26 @@ Draw annotation shapes to highlight areas of the screenshot. Rendered after imag
   border_width: int?           # Border width in pixels (default: 3)
   fill_color: string?          # Fill color in hex, supports alpha (e.g., "#FF3B3020")
   corner_radius: int?          # Corner radius for rounded_rect (default: 16)
+
+  # Shadow
+  shadow: bool?                # Enable drop shadow (default: false)
+  shadow_color: string?        # Shadow color with alpha (default: "#00000040")
+  shadow_blur: int?            # Gaussian blur radius (default: 15)
+  shadow_offset: [string, string]? # X, Y offset in px (default: ["0", "6"])
+
+  # Spotlight (dims everything outside the highlight)
+  spotlight: bool?             # Enable spotlight mode (default: false)
+  spotlight_color: string?     # Overlay color (default: "#000000")
+  spotlight_opacity: float?    # Overlay opacity 0.0-1.0 (default: 0.5)
+
+  # Background Blur (blurs everything outside the highlight)
+  blur_background: bool?       # Enable background blur (default: false)
+  blur_radius: int?            # Gaussian blur radius (default: 20)
 ```
 
-#### Example
+#### Examples
 ```yaml
+# Basic highlight
 - type: "highlight"
   shape: "circle"
   position: ["65%", "45%"]
@@ -281,29 +297,71 @@ Draw annotation shapes to highlight areas of the screenshot. Rendered after imag
   border_color: "#FF3B30"
   border_width: 4
   fill_color: "#FF3B3020"
+
+# Spotlight mode - dims everything except the highlighted area
+- type: "highlight"
+  shape: "rounded_rect"
+  position: ["50%", "45%"]
+  dimensions: ["60%", "15%"]
+  border_color: "#FF9500"
+  border_width: 4
+  corner_radius: 20
+  spotlight: true
+  spotlight_opacity: 0.6
+
+# Background blur - blurs everything outside the highlight
+- type: "highlight"
+  shape: "circle"
+  position: ["50%", "50%"]
+  dimensions: ["40%", "20%"]
+  border_color: "#007AFF"
+  border_width: 4
+  blur_background: true
+  blur_radius: 25
 ```
 
 ### Zoom Content Item
 
-Magnified callout bubble that crops a source region and displays it enlarged at another position. Rendered after highlights and before text.
+Magnified callout bubble that crops a source region and displays it enlarged at another position. Features source region indicators, advanced connector styles, drop shadows, and anti-aliased rendering. Rendered after highlights and before text.
 
 ```yaml
 - type: "zoom"
   source_position: [string, string]   # Center of area to magnify (required)
   source_size: [string, string]       # Crop region size (required)
   display_position: [string, string]? # Where magnified view appears (default: position)
-  display_size: [string, string]      # Size of magnified bubble (required)
+  display_size: [string, string]?     # Size of magnified bubble (required unless zoom_level set)
+  zoom_level: float?                  # Auto-calculate display_size = source_size * zoom_level
   shape: "circle" | "rounded_rect"?   # Bubble shape (default: "circle")
   border_color: string?               # Border color in hex
   border_width: int?                  # Border width in pixels (default: 3)
   corner_radius: int?                 # For rounded_rect (default: 16)
-  connector: bool?                    # Draw line from source to display (default: false)
-  connector_color: string?            # Line color (defaults to border_color)
-  connector_width: int?               # Line width in pixels (default: 2)
+
+  # Shadow
+  shadow: bool?                # Enable drop shadow (default: false)
+  shadow_color: string?        # Shadow color with alpha (default: "#00000040")
+  shadow_blur: int?            # Gaussian blur radius (default: 15)
+  shadow_offset: [string, string]? # X, Y offset in px (default: ["0", "6"])
+
+  # Source Region Indicator
+  source_indicator: bool?      # Show outline on source region (default: true)
+  source_indicator_style: string? # "border" | "dashed" | "fill" (default: "border")
+
+  # Connector
+  connector: bool?             # Draw connector from source to display (default: false)
+  connector_style: string?     # "straight" | "curved" | "facing" (default: "straight")
+  connector_color: string?     # Line color (defaults to border_color)
+  connector_width: int?        # Line width in pixels (default: 2)
+  connector_fill: string?      # Semi-transparent fill between facing connector lines
 ```
 
-#### Example
+#### Connector Styles
+- **`straight`**: Direct center-to-center line (default)
+- **`curved`**: Bezier curve bowing away from the direct path
+- **`facing`**: Two-line funnel from nearest edges of source to nearest edges of display, with optional fill
+
+#### Examples
 ```yaml
+# Basic zoom with source indicator
 - type: "zoom"
   source_position: ["65%", "45%"]
   source_size: ["15%", "10%"]
@@ -312,8 +370,34 @@ Magnified callout bubble that crops a source region and displays it enlarged at 
   shape: "circle"
   border_color: "#007AFF"
   border_width: 3
+  source_indicator: true
+
+# Professional zoom with shadow and facing connector
+- type: "zoom"
+  source_position: ["72%", "38%"]
+  source_size: ["22%", "5%"]
+  display_position: ["30%", "80%"]
+  display_size: ["45%", "12%"]
+  shape: "rounded_rect"
+  border_color: "#007AFF"
+  border_width: 5
+  corner_radius: 24
+  shadow: true
   connector: true
-  connector_color: "#007AFF"
+  connector_style: "facing"
+  connector_color: "#007AFF80"
+  connector_fill: "#007AFF10"
+
+# Zoom level shorthand (auto-calculates display_size)
+- type: "zoom"
+  source_position: ["50%", "45%"]
+  source_size: ["15%", "8%"]
+  display_position: ["50%", "82%"]
+  zoom_level: 2.5
+  shape: "circle"
+  border_color: "#FF3B30"
+  connector: true
+  connector_style: "curved"
 ```
 
 ### Position Format

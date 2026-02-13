@@ -3,28 +3,18 @@
 import logging
 from typing import Optional, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageFilter
 
 from ..exceptions import HighlightRenderError
+from .utils import (
+    draw_shadow,
+    draw_shape_aa,
+    draw_shape_mask_aa,
+    parse_color,
+    resolve_value,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def parse_color(hex_color: str) -> Tuple[int, ...]:
-    """Parse hex color string to RGBA tuple."""
-    color = hex_color.lstrip("#")
-    if len(color) == 3:
-        color = "".join(c * 2 for c in color)
-    if len(color) == 6:
-        color += "ff"
-    return tuple(int(color[i : i + 2], 16) for i in (0, 2, 4, 6))
-
-
-def resolve_value(value: str, dimension: int) -> int:
-    """Convert percentage or pixel string to pixel value."""
-    if value.endswith("%"):
-        return int(dimension * float(value[:-1]) / 100.0)
-    return int(value)
 
 
 class HighlightRenderer:
@@ -67,30 +57,106 @@ class HighlightRenderer:
         y0 = cy - h // 2
         x1 = cx + w // 2
         y1 = cy + h // 2
+        bbox = (x0, y0, x1, y1)
 
-        # Draw on transparent overlay
-        overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
+        # Spotlight mode: dim everything outside the highlight area
+        if config.get("spotlight"):
+            self._render_spotlight(config, canvas, shape, bbox, corner_radius)
 
+        # Blur background: blur everything outside the highlight area
+        if config.get("blur_background"):
+            self._render_blur_background(config, canvas, shape, bbox, corner_radius)
+
+        # Drop shadow
+        if config.get("shadow"):
+            shadow_color = config.get("shadow_color", "#00000040")
+            shadow_blur = config.get("shadow_blur", 15)
+            offset = config.get("shadow_offset", ("0", "6"))
+            shadow_offset = (int(offset[0]), int(offset[1]))
+
+            shadow_layer = draw_shadow(
+                canvas.size,
+                shape,
+                bbox,
+                shadow_color=shadow_color,
+                shadow_blur=shadow_blur,
+                shadow_offset=shadow_offset,
+                corner_radius=corner_radius,
+            )
+            composited = Image.alpha_composite(canvas, shadow_layer)
+            canvas.paste(composited)
+
+        # Draw highlight shape with anti-aliasing
         outline = border_color if border_color else None
         fill = fill_color if fill_color else None
         width = border_width if outline else 0
 
-        if shape == "circle":
-            draw.ellipse([x0, y0, x1, y1], fill=fill, outline=outline, width=width)
-        elif shape == "rounded_rect":
-            draw.rounded_rectangle(
-                [x0, y0, x1, y1],
-                radius=corner_radius,
-                fill=fill,
-                outline=outline,
-                width=width,
-            )
-        elif shape == "rect":
-            draw.rectangle([x0, y0, x1, y1], fill=fill, outline=outline, width=width)
+        overlay = draw_shape_aa(
+            canvas.size,
+            shape,
+            bbox,
+            fill=fill,
+            outline=outline,
+            width=width,
+            corner_radius=corner_radius,
+        )
+
+        composited = Image.alpha_composite(canvas, overlay)
+        canvas.paste(composited)
 
         logger.info(f"Rendered {shape} highlight at ({cx},{cy}) size {w}x{h}")
 
-        # Composite overlay onto canvas in place
+    def _render_spotlight(
+        self,
+        config: dict,
+        canvas: Image.Image,
+        shape: str,
+        bbox: Tuple[int, int, int, int],
+        corner_radius: int,
+    ) -> None:
+        """Dim everything outside the highlight shape."""
+        spotlight_color = parse_color(config.get("spotlight_color", "#000000"))
+        opacity = config.get("spotlight_opacity", 0.5)
+        alpha = int(255 * opacity)
+
+        # Create dark overlay
+        overlay = Image.new("RGBA", canvas.size, (*spotlight_color[:3], alpha))
+
+        # Cut out the highlight shape using an anti-aliased mask
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        cutout_mask = draw_shape_mask_aa((w, h), shape, corner_radius=corner_radius)
+
+        # Apply cutout: set overlay alpha to 0 inside the shape
+        overlay_alpha = overlay.split()[3]
+        overlay_alpha.paste(0, (bbox[0], bbox[1]), cutout_mask)
+        overlay.putalpha(overlay_alpha)
+
         composited = Image.alpha_composite(canvas, overlay)
         canvas.paste(composited)
+
+    def _render_blur_background(
+        self,
+        config: dict,
+        canvas: Image.Image,
+        shape: str,
+        bbox: Tuple[int, int, int, int],
+        corner_radius: int,
+    ) -> None:
+        """Blur everything outside the highlight shape."""
+        blur_radius = config.get("blur_radius", 20)
+
+        blurred = canvas.copy().filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+        # Create mask for the sharp (highlight) area
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        sharp_mask = draw_shape_mask_aa((w, h), shape, corner_radius=corner_radius)
+
+        # Full-canvas mask: 255 = show blurred, 0 = show sharp original
+        full_mask = Image.new("L", canvas.size, 255)
+        full_mask.paste(0, (bbox[0], bbox[1]), sharp_mask)
+
+        # Composite: blurred where mask is 255, original where 0
+        result = Image.composite(blurred, canvas, full_mask)
+        canvas.paste(result)
