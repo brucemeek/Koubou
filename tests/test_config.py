@@ -3,7 +3,13 @@
 import pytest
 from pydantic import ValidationError
 
-from koubou.config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
+from koubou.config import (
+    ContentItem,
+    GradientConfig,
+    ProjectConfig,
+    ScreenshotConfig,
+    TextOverlay,
+)
 
 
 class TestGradientConfig:
@@ -128,6 +134,142 @@ class TestScreenshotConfig:
             ScreenshotConfig(
                 name="Test", source_image=sample_image, output_size="InvalidSize"
             )
+
+
+class TestContentItemHighlight:
+    """Tests for ContentItem with type='highlight'."""
+
+    def test_valid_highlight(self):
+        item = ContentItem(
+            type="highlight",
+            shape="circle",
+            position=("50%", "50%"),
+            dimensions=("20%", "15%"),
+            border_color="#FF3B30",
+            border_width=4,
+        )
+        assert item.type == "highlight"
+        assert item.shape == "circle"
+
+    def test_highlight_all_shapes(self):
+        for shape in ["circle", "rounded_rect", "rect"]:
+            item = ContentItem(
+                type="highlight",
+                shape=shape,
+                position=("50%", "50%"),
+            )
+            assert item.shape == shape
+
+    def test_highlight_missing_shape_raises(self):
+        with pytest.raises(ValidationError, match="shape"):
+            ContentItem(
+                type="highlight",
+                position=("50%", "50%"),
+            )
+
+    def test_highlight_with_fill(self):
+        item = ContentItem(
+            type="highlight",
+            shape="rect",
+            position=("50%", "50%"),
+            fill_color="#FF3B3020",
+            border_color="#FF3B30",
+        )
+        assert item.fill_color == "#FF3B3020"
+
+    def test_highlight_invalid_border_color(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="highlight",
+                shape="circle",
+                position=("50%", "50%"),
+                border_color="red",
+            )
+
+    def test_highlight_invalid_fill_color(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="highlight",
+                shape="circle",
+                position=("50%", "50%"),
+                fill_color="invalid",
+            )
+
+
+class TestContentItemZoom:
+    """Tests for ContentItem with type='zoom'."""
+
+    def test_valid_zoom(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("65%", "45%"),
+            source_size=("15%", "10%"),
+            display_position=("25%", "20%"),
+            display_size=("35%", "30%"),
+            shape="circle",
+            border_color="#007AFF",
+        )
+        assert item.type == "zoom"
+        assert item.source_position == ("65%", "45%")
+
+    def test_zoom_missing_source_position_raises(self):
+        with pytest.raises(ValidationError, match="source_position"):
+            ContentItem(
+                type="zoom",
+                source_size=("15%", "10%"),
+                display_size=("35%", "30%"),
+            )
+
+    def test_zoom_missing_source_size_raises(self):
+        with pytest.raises(ValidationError, match="source_size"):
+            ContentItem(
+                type="zoom",
+                source_position=("65%", "45%"),
+                display_size=("35%", "30%"),
+            )
+
+    def test_zoom_missing_display_size_raises(self):
+        with pytest.raises(ValidationError, match="display_size"):
+            ContentItem(
+                type="zoom",
+                source_position=("65%", "45%"),
+                source_size=("15%", "10%"),
+            )
+
+    def test_zoom_defaults(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            display_size=("30%", "30%"),
+        )
+        assert item.connector is False
+        assert item.connector_width == 2
+        assert item.border_width == 3
+        assert item.corner_radius == 16
+
+    def test_zoom_invalid_connector_color(self):
+        with pytest.raises(ValidationError, match="hex format"):
+            ContentItem(
+                type="zoom",
+                source_position=("50%", "50%"),
+                source_size=("10%", "10%"),
+                display_size=("30%", "30%"),
+                connector_color="blue",
+            )
+
+    def test_zoom_with_connector(self):
+        item = ContentItem(
+            type="zoom",
+            source_position=("50%", "50%"),
+            source_size=("10%", "10%"),
+            display_size=("30%", "30%"),
+            connector=True,
+            connector_color="#FF0000",
+            connector_width=3,
+        )
+        assert item.connector is True
+        assert item.connector_color == "#FF0000"
 
 
 class TestProjectConfig:

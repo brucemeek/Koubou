@@ -597,3 +597,182 @@ class TestResolveLocalizedAsset:
         result = resolve_localized_asset(asset, "en", "en", None)
         # Should return direct path as fallback since files don't exist in CWD
         assert result == asset
+
+
+class TestHighlightIntegration:
+    """Integration tests for highlight content items in the generation pipeline."""
+
+    def setup_method(self):
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.source_image_path = self.temp_dir / "source.png"
+        source_image = Image.new("RGBA", (200, 400), (255, 0, 0, 255))
+        source_image.save(self.source_image_path)
+
+        self.frame_dir = self.temp_dir / "frames"
+        self.frame_dir.mkdir()
+
+        import json
+
+        with open(self.frame_dir / "Frames.json", "w") as f:
+            json.dump({}, f)
+
+        self.generator = ScreenshotGenerator(frame_directory=str(self.frame_dir))
+
+    def teardown_method(self):
+        shutil.rmtree(self.temp_dir)
+
+    def test_project_with_highlight(self):
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Highlight Test",
+                output_dir=str(self.temp_dir / "output"),
+                device="iPhone 15 Pro Portrait",
+            ),
+            screenshots={
+                "screenshot1": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        ),
+                        ContentItem(
+                            type="highlight",
+                            shape="circle",
+                            position=("50%", "50%"),
+                            dimensions=("20%", "15%"),
+                            border_color="#FF3B30",
+                            border_width=4,
+                        ),
+                    ],
+                    frame=False,
+                ),
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+        assert len(results) == 1
+        assert results[0].exists()
+
+        output_image = Image.open(results[0])
+        assert output_image.mode == "RGB"
+
+
+class TestZoomIntegration:
+    """Integration tests for zoom content items in the generation pipeline."""
+
+    def setup_method(self):
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.source_image_path = self.temp_dir / "source.png"
+        source_image = Image.new("RGBA", (200, 400), (0, 0, 255, 255))
+        source_image.save(self.source_image_path)
+
+        self.frame_dir = self.temp_dir / "frames"
+        self.frame_dir.mkdir()
+
+        import json
+
+        with open(self.frame_dir / "Frames.json", "w") as f:
+            json.dump({}, f)
+
+        self.generator = ScreenshotGenerator(frame_directory=str(self.frame_dir))
+
+    def teardown_method(self):
+        shutil.rmtree(self.temp_dir)
+
+    def test_project_with_zoom(self):
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Zoom Test",
+                output_dir=str(self.temp_dir / "output"),
+                device="iPhone 15 Pro Portrait",
+            ),
+            screenshots={
+                "screenshot1": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        ),
+                        ContentItem(
+                            type="zoom",
+                            source_position=("50%", "50%"),
+                            source_size=("15%", "10%"),
+                            display_position=("25%", "20%"),
+                            display_size=("35%", "30%"),
+                            shape="circle",
+                            border_color="#007AFF",
+                            border_width=3,
+                            connector=True,
+                            connector_color="#007AFF",
+                        ),
+                    ],
+                    frame=False,
+                ),
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+        assert len(results) == 1
+        assert results[0].exists()
+
+    def test_project_with_highlight_zoom_and_text(self):
+        """Layer order: background -> image -> highlight -> zoom -> text."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Combined Test",
+                output_dir=str(self.temp_dir / "output"),
+                device="iPhone 15 Pro Portrait",
+            ),
+            screenshots={
+                "screenshot1": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        ),
+                        ContentItem(
+                            type="highlight",
+                            shape="rounded_rect",
+                            position=("60%", "40%"),
+                            dimensions=("25%", "20%"),
+                            border_color="#FF3B30",
+                            border_width=3,
+                            fill_color="#FF3B3020",
+                        ),
+                        ContentItem(
+                            type="zoom",
+                            source_position=("60%", "40%"),
+                            source_size=("15%", "10%"),
+                            display_position=("25%", "20%"),
+                            display_size=("30%", "25%"),
+                            shape="circle",
+                            border_color="#007AFF",
+                            border_width=3,
+                            connector=True,
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Amazing Feature",
+                            position=("50%", "85%"),
+                        ),
+                    ],
+                    frame=False,
+                ),
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+        assert len(results) == 1
+        assert results[0].exists()
+
+        output_image = Image.open(results[0])
+        assert output_image.mode == "RGB"

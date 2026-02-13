@@ -41,3 +41,15 @@ class TextGradientError(TextRenderError):
     """Raised when there's an error rendering text gradients."""
 
     pass
+
+
+class HighlightRenderError(RenderError):
+    """Raised when there's an error rendering highlight annotations."""
+
+    pass
+
+
+class ZoomRenderError(RenderError):
+    """Raised when there's an error rendering zoom callouts."""
+
+    pass

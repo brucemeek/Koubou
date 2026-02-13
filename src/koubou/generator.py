@@ -12,7 +12,9 @@ from .exceptions import ConfigurationError, RenderError
 from .localization import LocalizedContentResolver, XCStringsManager
 from .renderers.background import BackgroundRenderer
 from .renderers.device_frame import DeviceFrameRenderer
+from .renderers.highlight import HighlightRenderer
 from .renderers.text import TextRenderer
+from .renderers.zoom import ZoomRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +121,8 @@ class ScreenshotGenerator:
         self.background_renderer = BackgroundRenderer()
         self.text_renderer = TextRenderer()
         self.device_frame_renderer = DeviceFrameRenderer(self.frame_directory)
+        self.highlight_renderer = HighlightRenderer()
+        self.zoom_renderer = ZoomRenderer()
 
         # Load device frame metadata
         self._load_frame_metadata()
@@ -235,6 +239,18 @@ class ScreenshotGenerator:
                     )
 
                 canvas = Image.alpha_composite(canvas, positioned_image)
+
+            # Render highlights (after images, before text)
+            if hasattr(config, "_highlight_configs") and config._highlight_configs:
+                logger.info(f"🔦 Rendering {len(config._highlight_configs)} highlights")
+                for hl_config in config._highlight_configs:
+                    self.highlight_renderer.render(hl_config, canvas)
+
+            # Render zoom callouts (after highlights, before text)
+            if hasattr(config, "_zoom_configs") and config._zoom_configs:
+                logger.info(f"🔍 Rendering {len(config._zoom_configs)} zoom callouts")
+                for zm_config in config._zoom_configs:
+                    self.zoom_renderer.render(zm_config, canvas)
 
             # Render text overlays
             if config.text_overlays:
@@ -831,8 +847,10 @@ class ScreenshotGenerator:
         # Process content items and collect ALL images
         image_configs = []
         text_overlays = []
+        highlight_configs: List[Dict[str, Any]] = []
+        zoom_configs: List[Dict[str, Any]] = []
 
-        # Process all content items to collect images and text
+        # Process all content items to collect images, text, highlights, and zooms
         for item in screenshot_def.content:
             if item.type == "image":
                 # Resolve localized asset path
@@ -882,6 +900,34 @@ class ScreenshotGenerator:
                     f"frame={getattr(item, 'frame', False)}, rotation={image_rotation}°"
                 )
                 # Continue processing more images instead of breaking
+
+            elif item.type == "highlight":
+                hl = {
+                    "shape": item.shape,
+                    "position": item.position,
+                    "dimensions": item.dimensions,
+                    "border_color": item.border_color,
+                    "border_width": item.border_width,
+                    "fill_color": item.fill_color,
+                    "corner_radius": item.corner_radius,
+                }
+                highlight_configs.append(hl)
+
+            elif item.type == "zoom":
+                zm = {
+                    "source_position": item.source_position,
+                    "source_size": item.source_size,
+                    "display_position": item.display_position or item.position,
+                    "display_size": item.display_size,
+                    "shape": item.shape or "circle",
+                    "border_color": item.border_color,
+                    "border_width": item.border_width,
+                    "corner_radius": item.corner_radius,
+                    "connector": item.connector,
+                    "connector_color": item.connector_color,
+                    "connector_width": item.connector_width,
+                }
+                zoom_configs.append(zm)
 
         # Skip if no images found
         if not image_configs:
@@ -1031,6 +1077,8 @@ class ScreenshotGenerator:
             scaled_width,
             scaled_height,
         )
+        config._highlight_configs = highlight_configs  # type: ignore[attr-defined]
+        config._zoom_configs = zoom_configs  # type: ignore[attr-defined]
 
         return config
 

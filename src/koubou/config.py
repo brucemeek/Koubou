@@ -300,7 +300,9 @@ class ScreenshotConfig(BaseModel):
 class ContentItem(BaseModel):
     """Individual content item in a screenshot."""
 
-    type: Literal["text", "image"] = Field(..., description="Type of content item")
+    type: Literal["text", "image", "highlight", "zoom"] = Field(
+        ..., description="Type of content item"
+    )
     content: Optional[str] = Field(default=None, description="Text content")
     asset: Optional[Union[str, Dict[str, str]]] = Field(
         default=None,
@@ -344,6 +346,47 @@ class ContentItem(BaseModel):
     )
     rotation: Optional[float] = Field(
         default=0, description="Rotation angle in degrees (clockwise)"
+    )
+
+    # Highlight/Zoom shared fields
+    shape: Optional[Literal["circle", "rounded_rect", "rect"]] = Field(
+        default=None, description="Shape for highlight or zoom callout"
+    )
+    dimensions: Optional[Tuple[str, str]] = Field(
+        default=None, description="Width, height for highlight (% or px)"
+    )
+    border_color: Optional[str] = Field(
+        default=None, description="Border color in hex format"
+    )
+    border_width: Optional[int] = Field(default=3, description="Border width in pixels")
+    fill_color: Optional[str] = Field(
+        default=None, description="Fill color in hex format (supports alpha)"
+    )
+    corner_radius: Optional[int] = Field(
+        default=16, description="Corner radius for rounded_rect shape"
+    )
+
+    # Zoom-specific fields
+    source_position: Optional[Tuple[str, str]] = Field(
+        default=None, description="Center of area to magnify (% or px)"
+    )
+    source_size: Optional[Tuple[str, str]] = Field(
+        default=None, description="Size of source crop region (% or px)"
+    )
+    display_position: Optional[Tuple[str, str]] = Field(
+        default=None, description="Where magnified view appears (% or px)"
+    )
+    display_size: Optional[Tuple[str, str]] = Field(
+        default=None, description="Size of magnified bubble (% or px)"
+    )
+    connector: Optional[bool] = Field(
+        default=False, description="Draw connector line from source to display"
+    )
+    connector_color: Optional[str] = Field(
+        default=None, description="Connector line color (defaults to border_color)"
+    )
+    connector_width: Optional[int] = Field(
+        default=2, description="Connector line width in pixels"
     )
 
     @field_validator("color")
@@ -397,6 +440,41 @@ class ContentItem(BaseModel):
                 )
 
         return v
+
+    @field_validator("border_color")
+    @classmethod
+    def validate_border_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Border color")
+        return v
+
+    @field_validator("fill_color")
+    @classmethod
+    def validate_fill_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Fill color")
+        return v
+
+    @field_validator("connector_color")
+    @classmethod
+    def validate_connector_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            validate_hex_color(v, "Connector color")
+        return v
+
+    @model_validator(mode="after")
+    def validate_type_required_fields(self):
+        if self.type == "highlight":
+            if self.shape is None:
+                raise ValueError("Highlight items require 'shape'")
+        elif self.type == "zoom":
+            if self.source_position is None:
+                raise ValueError("Zoom items require 'source_position'")
+            if self.source_size is None:
+                raise ValueError("Zoom items require 'source_size'")
+            if self.display_size is None:
+                raise ValueError("Zoom items require 'display_size'")
+        return self
 
     @field_validator("asset")
     @classmethod
