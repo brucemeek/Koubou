@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-02-14
+
+### Added
+- **Highlight annotations**: drop shadow, spotlight mode, blur background
+- **Zoom callouts**: drop shadow, source region indicator (border/dashed/fill), advanced connectors (straight/curved/facing with optional fill), zoom_level shorthand
+- Anti-aliased shape rendering via 2x supersampling
+- Shared renderer utilities (`renderers/utils.py`)
+- Example YAML and documentation for all new features
+
+### Fixed
+- Zoom bubble no longer captures source indicator and connector lines in cropped content
+- Source indicator uses rectangular shape matching the crop region
+- Border-only highlights render outline shadow instead of filled shadow
+
+### Testing
+- 317 tests passing
+
 ## [0.11.1] - 2026-02-11
 
 ### Fixed
