@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-02-25
+
 ### Added
 - **Text auto-sizing**: Automatically find the largest font size that fits within a pixel height budget. Set `min_size`, `max_width`, and `max_height` on text content items — Koubou shrinks from `size` down to `min_size` until the wrapped text block fits within `max_height`. Ideal for multi-language screenshots where translation lengths vary.
 - `max_width`, `max_lines`, `max_height`, `min_size` fields on `ContentItem` for text content
