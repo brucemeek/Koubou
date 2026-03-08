@@ -1,0 +1,314 @@
+# Dream Oracle 6.5-inch iPhone App Store screenshots generated from the adjacent Dream_Oracle repo.
+
+project:
+  name: "Dream Oracle 6.5"
+  output_dir: "../output/dream-oracle-iphone65"
+  device: "iPhone 11 Pro Max Portrait"
+  output_size: "iPhone6_5"
+
+defaults:
+  background:
+    type: "radial"
+    colors: ["#0C1327", "#1A0B2E", "#050816"]
+    center: ["50%", "12%"]
+
+screenshots:
+  dashboard:
+    background:
+      type: "radial"
+      colors: ["#102240", "#1A0B2E", "#050816"]
+      center: ["50%", "12%"]
+    content:
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/background - dark.webp"
+        position: ["50%", "50%"]
+        scale: 1.9
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/starfield-overlay.webp"
+        position: ["50%", "50%"]
+        scale: 2.9
+
+      - type: "text"
+        content: "UNDERSTAND YOURSELF"
+        position: ["50%", "8.4%"]
+        size: 36
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-SemiBold.ttf"
+        color: "#67E8F9"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+
+      - type: "text"
+        content: "Understand your dreams"
+        position: ["50%", "11.9%"]
+        size: 80
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-ExtraBold.ttf"
+        gradient:
+          type: "linear"
+          colors: ["#FFFFFF", "#DDD6FE", "#67E8F9"]
+          direction: 90
+        stroke_width: 1
+        stroke_color: "#130A22CC"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 1000
+        line_height: 1.02
+
+      - type: "text"
+        content: "See patterns, moods, and guidance the moment you wake up."
+        position: ["50%", "21.4%"]
+        size: 34
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-Regular.ttf"
+        color: "#E9E8FF"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 920
+        line_height: 1.25
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots_dark/dashboard.png"
+        position: ["50%", "73%"]
+        scale: 0.66
+        frame: true
+
+  dreams:
+    background:
+      type: "radial"
+      colors: ["#1B1040", "#2E1065", "#050816"]
+      center: ["50%", "12%"]
+    content:
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/background - dark.webp"
+        position: ["50%", "50%"]
+        scale: 1.9
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/starfield-overlay.webp"
+        position: ["50%", "50%"]
+        scale: 2.9
+
+      - type: "text"
+        content: "SAVE THE DETAILS"
+        position: ["50%", "8.4%"]
+        size: 36
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-SemiBold.ttf"
+        color: "#C4B5FD"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+
+      - type: "text"
+        content: "Save dreams before they fade"
+        position: ["50%", "11.9%"]
+        size: 78
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-ExtraBold.ttf"
+        gradient:
+          type: "linear"
+          colors: ["#FFFFFF", "#DDD6FE", "#A78BFA"]
+          direction: 90
+        stroke_width: 1
+        stroke_color: "#130A22CC"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 1020
+        line_height: 1.02
+
+      - type: "text"
+        content: "Capture symbols, feelings, and fragments in seconds."
+        position: ["50%", "21.4%"]
+        size: 34
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-Regular.ttf"
+        color: "#F3E8FF"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 920
+        line_height: 1.25
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots_dark/dreams.png"
+        position: ["50%", "73%"]
+        scale: 0.66
+        frame: true
+
+  chat:
+    background:
+      type: "radial"
+      colors: ["#0A2630", "#0B3B55", "#050816"]
+      center: ["50%", "12%"]
+    content:
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/background - dark.webp"
+        position: ["50%", "50%"]
+        scale: 1.9
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/starfield-overlay.webp"
+        position: ["50%", "50%"]
+        scale: 2.9
+
+      - type: "text"
+        content: "GO DEEPER"
+        position: ["50%", "8.4%"]
+        size: 36
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-SemiBold.ttf"
+        color: "#67E8F9"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+
+      - type: "text"
+        content: "Ask what it all means"
+        position: ["50%", "11.9%"]
+        size: 80
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-ExtraBold.ttf"
+        gradient:
+          type: "linear"
+          colors: ["#FFFFFF", "#CCFBF1", "#67E8F9"]
+          direction: 90
+        stroke_width: 1
+        stroke_color: "#130A22CC"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 1000
+        line_height: 1.02
+
+      - type: "text"
+        content: "Get personal interpretations and smart follow-up answers."
+        position: ["50%", "21.4%"]
+        size: 34
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-Regular.ttf"
+        color: "#DDFBFF"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 920
+        line_height: 1.25
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots_dark/chat.png"
+        position: ["50%", "73%"]
+        scale: 0.66
+        frame: true
+
+  dictionary:
+    background:
+      type: "radial"
+      colors: ["#241608", "#2D145A", "#050816"]
+      center: ["50%", "12%"]
+    content:
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/background - dark.webp"
+        position: ["50%", "50%"]
+        scale: 1.9
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/starfield-overlay.webp"
+        position: ["50%", "50%"]
+        scale: 2.9
+
+      - type: "text"
+        content: "SEARCH SYMBOLS"
+        position: ["50%", "8.4%"]
+        size: 36
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-SemiBold.ttf"
+        color: "#FCD34D"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+
+      - type: "text"
+        content: "Search every symbol"
+        position: ["50%", "11.9%"]
+        size: 80
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-ExtraBold.ttf"
+        gradient:
+          type: "linear"
+          colors: ["#FFFFFF", "#FEF3C7", "#FCD34D"]
+          direction: 90
+        stroke_width: 1
+        stroke_color: "#130A22CC"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 1000
+        line_height: 1.02
+
+      - type: "text"
+        content: "Explore the people, places, and signs that keep returning."
+        position: ["50%", "21.4%"]
+        size: 34
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-Regular.ttf"
+        color: "#FFF4D6"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 920
+        line_height: 1.25
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots_dark/dictionary.png"
+        position: ["50%", "73%"]
+        scale: 0.66
+        frame: true
+
+  profile:
+    background:
+      type: "radial"
+      colors: ["#1A0D32", "#34155C", "#050816"]
+      center: ["50%", "12%"]
+    content:
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/background - dark.webp"
+        position: ["50%", "50%"]
+        scale: 1.9
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/assets/backgrounds/starfield-overlay.webp"
+        position: ["50%", "50%"]
+        scale: 2.9
+
+      - type: "text"
+        content: "BUILD A RITUAL"
+        position: ["50%", "8.4%"]
+        size: 36
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-SemiBold.ttf"
+        color: "#F5D0FE"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+
+      - type: "text"
+        content: "Make it a nightly ritual"
+        position: ["50%", "11.9%"]
+        size: 76
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-ExtraBold.ttf"
+        gradient:
+          type: "linear"
+          colors: ["#FFFFFF", "#FAE8FF", "#F5D0FE"]
+          direction: 90
+        stroke_width: 1
+        stroke_color: "#130A22CC"
+        weight: "normal"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 1020
+        line_height: 1.02
+
+      - type: "text"
+        content: "Set reminders and preferences that keep reflection consistent."
+        position: ["50%", "21.4%"]
+        size: 34
+        font_family: "C:/AIDevelopment/Dream_Oracle/apps/mobile_flutter/assets/google_fonts/Poppins-Regular.ttf"
+        color: "#F8E9FF"
+        alignment: "center"
+        anchor: "top-center"
+        max_width: 920
+        line_height: 1.25
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots_dark/profile.png"
+        position: ["50%", "73%"]
+        scale: 0.66
+        frame: true
