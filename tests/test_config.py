@@ -162,6 +162,28 @@ class TestContentItemFontFamily:
         assert item.font_family is None
 
 
+class TestContentItemTextAnchor:
+    """Tests for ContentItem text anchor support."""
+
+    def test_text_anchor_custom(self):
+        item = ContentItem(
+            type="text",
+            content="Hello",
+            position=("10%", "20%"),
+            anchor="top-left",
+        )
+        assert item.anchor == "top-left"
+
+    def test_text_anchor_invalid_value(self):
+        with pytest.raises(ValidationError):
+            ContentItem(
+                type="text",
+                content="Hello",
+                position=("10%", "20%"),
+                anchor="left",
+            )
+
+
 class TestContentItemHighlight:
     """Tests for ContentItem with type='highlight'."""
 

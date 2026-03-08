@@ -1023,8 +1023,7 @@ class ScreenshotGenerator:
                         # is provided
                         gradient=item.gradient,  # Pass gradient configuration
                         alignment=getattr(item, "alignment", "center") or "center",
-                        anchor="center",  # Use center anchor for
-                        # percentage-based positioning
+                        anchor=getattr(item, "anchor", "center") or "center",
                         max_width=item.max_width,
                         max_lines=item.max_lines,
                         min_font_size=item.min_size,

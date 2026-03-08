@@ -353,6 +353,19 @@ class ContentItem(BaseModel):
     alignment: Optional[str] = Field(
         default="center", description="Text alignment (left, center, right)"
     )
+    anchor: Optional[
+        Literal[
+            "top-left",
+            "top-center",
+            "top-right",
+            "center-left",
+            "center",
+            "center-right",
+            "bottom-left",
+            "bottom-center",
+            "bottom-right",
+        ]
+    ] = Field(default="center", description="Anchor point for text positioning")
 
     # Stroke options
     stroke_width: Optional[int] = Field(default=None, description="Text stroke width")

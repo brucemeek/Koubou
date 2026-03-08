@@ -226,6 +226,7 @@ Content items define the visual elements within each screenshot.
   weight: string?            # "normal" or "bold" (default: "normal")
   font_family: string?       # Font family name (default: "Arial")
   alignment: string?         # "left", "center", "right" (default: "center")
+  anchor: string?            # "top-left", "top-center", "top-right", "center-left", "center", "center-right", "bottom-left", "bottom-center", or "bottom-right" (default: "center")
 
   # Stroke Options (optional):
   stroke_width: int?         # Stroke width in pixels
