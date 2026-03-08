@@ -194,6 +194,20 @@ class TestDeviceFrameRenderer:
         frames = self.renderer.get_available_frames()
         assert "Test Frame" in frames
 
+    def test_windows_safe_frame_aliases(self):
+        """Test loading a legacy quoted frame name from a Windows-safe file."""
+        frame_image = Image.new("RGBA", (320, 640), (128, 128, 128, 255))
+        frame_image.save(self.temp_dir / "iPad Air 11-inch - M2 - Space Gray - Portrait.png")
+
+        frames = self.renderer.get_available_frames()
+
+        assert 'iPad Air 11" - M2 - Space Gray - Portrait' in frames
+        assert "iPad Air 11-inch - M2 - Space Gray - Portrait" not in frames
+        assert self.renderer.get_frame_size('iPad Air 11" - M2 - Space Gray - Portrait') == (
+            320,
+            640,
+        )
+
     def test_get_frame_size(self):
         """Test getting frame size."""
         size = self.renderer.get_frame_size("Test Frame")

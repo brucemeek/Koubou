@@ -1,0 +1,159 @@
+# Dream Oracle App Store screenshots generated from the adjacent Dream_Oracle repo.
+
+project:
+  name: "Dream Oracle"
+  output_dir: "../output/dream-oracle"
+  device: "iPhone 16 Pro Max - Black Titanium - Portrait"
+  output_size: "iPhone6_9"
+
+defaults:
+  background:
+    type: "linear"
+    colors: ["#08111f", "#17254f"]
+    direction: 135
+
+screenshots:
+  dashboard:
+    background:
+      type: "linear"
+      colors: ["#08111f", "#213a70"]
+      direction: 140
+    content:
+      - type: "text"
+        content: "Decode every dream"
+        position: ["50%", "10%"]
+        size: 62
+        font_family: "arialbd.ttf"
+        color: "#ffffff"
+        weight: "bold"
+        alignment: "center"
+
+      - type: "text"
+        content: "Daily guidance, insights, and patterns at a glance"
+        position: ["50%", "17%"]
+        size: 28
+        font_family: "arial.ttf"
+        color: "#d5ddff"
+        alignment: "center"
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots/dashboard.png"
+        position: ["50%", "58%"]
+        scale: 0.63
+        frame: true
+
+  dreams:
+    background:
+      type: "linear"
+      colors: ["#160f2d", "#43306b"]
+      direction: 150
+    content:
+      - type: "text"
+        content: "Track your dream life"
+        position: ["50%", "10%"]
+        size: 60
+        font_family: "arialbd.ttf"
+        color: "#ffffff"
+        weight: "bold"
+        alignment: "center"
+
+      - type: "text"
+        content: "Keep every symbol, pattern, and reflection in one place"
+        position: ["50%", "17%"]
+        size: 27
+        font_family: "arial.ttf"
+        color: "#e4dcff"
+        alignment: "center"
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots/dreams.png"
+        position: ["50%", "58%"]
+        scale: 0.63
+        frame: true
+
+  chat:
+    background:
+      type: "linear"
+      colors: ["#07161a", "#0e5d65"]
+      direction: 140
+    content:
+      - type: "text"
+        content: "Talk through the meaning"
+        position: ["50%", "10%"]
+        size: 58
+        font_family: "arialbd.ttf"
+        color: "#ffffff"
+        weight: "bold"
+        alignment: "center"
+
+      - type: "text"
+        content: "Ask follow-up questions and get grounded interpretations"
+        position: ["50%", "17%"]
+        size: 27
+        font_family: "arial.ttf"
+        color: "#d8ffff"
+        alignment: "center"
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots/chat.png"
+        position: ["50%", "58%"]
+        scale: 0.63
+        frame: true
+
+  dictionary:
+    background:
+      type: "linear"
+      colors: ["#151515", "#6e4f24"]
+      direction: 135
+    content:
+      - type: "text"
+        content: "Explore every symbol"
+        position: ["50%", "10%"]
+        size: 60
+        font_family: "arialbd.ttf"
+        color: "#ffffff"
+        weight: "bold"
+        alignment: "center"
+
+      - type: "text"
+        content: "Search the dream dictionary and uncover deeper context"
+        position: ["50%", "17%"]
+        size: 27
+        font_family: "arial.ttf"
+        color: "#fff1d3"
+        alignment: "center"
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots/dictionary.png"
+        position: ["50%", "58%"]
+        scale: 0.63
+        frame: true
+
+  profile:
+    background:
+      type: "linear"
+      colors: ["#17121f", "#4d2c5f"]
+      direction: 140
+    content:
+      - type: "text"
+        content: "Make it your ritual"
+        position: ["50%", "10%"]
+        size: 60
+        font_family: "arialbd.ttf"
+        color: "#ffffff"
+        weight: "bold"
+        alignment: "center"
+
+      - type: "text"
+        content: "Personalize reminders, preferences, and your dream practice"
+        position: ["50%", "17%"]
+        size: 27
+        font_family: "arial.ttf"
+        color: "#f0defa"
+        alignment: "center"
+
+      - type: "image"
+        asset: "../../Dream_Oracle/apps/mobile_flutter/build/app_store_screenshots/profile.png"
+        position: ["50%", "58%"]
+        scale: 0.63
+        frame: true

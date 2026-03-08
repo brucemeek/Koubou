@@ -12,6 +12,32 @@ from ..exceptions import DeviceFrameError
 logger = logging.getLogger(__name__)
 
 
+FRAME_FILE_ALIASES = {
+    'iMac 24" - Silver': 'iMac 24-inch - Silver',
+    'iPad Air 11" - M2 - Blue - Landscape': 'iPad Air 11-inch - M2 - Blue - Landscape',
+    'iPad Air 11" - M2 - Blue - Portrait': 'iPad Air 11-inch - M2 - Blue - Portrait',
+    'iPad Air 11" - M2 - Purple - Landscape': 'iPad Air 11-inch - M2 - Purple - Landscape',
+    'iPad Air 11" - M2 - Purple - Portrait': 'iPad Air 11-inch - M2 - Purple - Portrait',
+    'iPad Air 11" - M2 - Space Gray - Landscape': 'iPad Air 11-inch - M2 - Space Gray - Landscape',
+    'iPad Air 11" - M2 - Space Gray - Portrait': 'iPad Air 11-inch - M2 - Space Gray - Portrait',
+    'iPad Air 11" - M2 - Stardust - Landscape': 'iPad Air 11-inch - M2 - Stardust - Landscape',
+    'iPad Air 11" - M2 - Stardust - Portrait': 'iPad Air 11-inch - M2 - Stardust - Portrait',
+    'iPad Air 13" - M2 - Blue - Landscape': 'iPad Air 13-inch - M2 - Blue - Landscape',
+    'iPad Air 13" - M2 - Blue - Portrait': 'iPad Air 13-inch - M2 - Blue - Portrait',
+    'iPad Air 13" - M2 - Purple - Landscape': 'iPad Air 13-inch - M2 - Purple - Landscape',
+    'iPad Air 13" - M2 - Purple - Portrait': 'iPad Air 13-inch - M2 - Purple - Portrait',
+    'iPad Air 13" - M2 - Space Gray - Landscape': 'iPad Air 13-inch - M2 - Space Gray - Landscape',
+    'iPad Air 13" - M2 - Space Gray - Portrait': 'iPad Air 13-inch - M2 - Space Gray - Portrait',
+    'iPad Air 13" - M2 - Stardust - Landscape': 'iPad Air 13-inch - M2 - Stardust - Landscape',
+    'iPad Air 13" - M2 - Stardust - Portrait': 'iPad Air 13-inch - M2 - Stardust - Portrait',
+}
+
+FRAME_DISPLAY_ALIASES = {
+    physical_name: logical_name
+    for logical_name, physical_name in FRAME_FILE_ALIASES.items()
+}
+
+
 class DeviceFrameRenderer:
     """Renders device frames around screenshots."""
 
@@ -93,14 +119,19 @@ class DeviceFrameRenderer:
     def _load_frame_image(self, frame_name: str) -> Image.Image:
         """Load device frame image file."""
         # Try different possible file extensions
-        for ext in [".png", ".PNG"]:
-            frame_path = self.frame_directory / f"{frame_name}{ext}"
-            if frame_path.exists():
-                opened_image = Image.open(frame_path)
-                # Ensure RGBA mode for proper compositing
-                if opened_image.mode != "RGBA":
-                    return opened_image.convert("RGBA")
-                return opened_image
+        candidate_names = [FRAME_FILE_ALIASES.get(frame_name, frame_name)]
+        if frame_name not in candidate_names:
+            candidate_names.append(frame_name)
+
+        for candidate_name in candidate_names:
+            for ext in [".png", ".PNG"]:
+                frame_path = self.frame_directory / f"{candidate_name}{ext}"
+                if frame_path.exists():
+                    opened_image = Image.open(frame_path)
+                    # Ensure RGBA mode for proper compositing
+                    if opened_image.mode != "RGBA":
+                        return opened_image.convert("RGBA")
+                    return opened_image
 
         raise DeviceFrameError(f"Device frame not found: {frame_name}")
 
@@ -258,7 +289,7 @@ class DeviceFrameRenderer:
 
         # Also scan directory for PNG files
         for frame_file in self.frame_directory.glob("*.png"):
-            frame_name = frame_file.stem
+            frame_name = FRAME_DISPLAY_ALIASES.get(frame_file.stem, frame_file.stem)
             if frame_name not in frames:
                 frames.append(frame_name)
 

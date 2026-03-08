@@ -69,7 +69,8 @@ zip-safe = false
 [tool.setuptools.package-data]
 koubou = [
     "frames/*.png",
-    "frames/*.json"
+    "frames/*.json",
+    "frames/*.txt"
 ]
 
 [tool.black]

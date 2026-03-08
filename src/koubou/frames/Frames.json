@@ -431,5 +431,86 @@
       }
     }
   },
+  "Android Pixel - Portrait": {
+    "name": "Android Pixel - Portrait",
+    "screen_bounds": {
+      "x": 139,
+      "y": 285,
+      "width": 1080,
+      "height": 1920
+    }
+  },
+  "Android Pixel - Landscape": {
+    "name": "Android Pixel - Landscape",
+    "screen_bounds": {
+      "x": 338,
+      "y": 78,
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "Android Pixel 2 - Portrait": {
+    "name": "Android Pixel 2 - Portrait",
+    "screen_bounds": {
+      "x": 140,
+      "y": 280,
+      "width": 1080,
+      "height": 1920
+    }
+  },
+  "Android Pixel 2 - Landscape": {
+    "name": "Android Pixel 2 - Landscape",
+    "screen_bounds": {
+      "x": 338,
+      "y": 68,
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "Android Pixel 3 - Portrait": {
+    "name": "Android Pixel 3 - Portrait",
+    "screen_bounds": {
+      "x": 54,
+      "y": 196,
+      "width": 1080,
+      "height": 2160
+    }
+  },
+  "Android Nexus 5X - Portrait": {
+    "name": "Android Nexus 5X - Portrait",
+    "screen_bounds": {
+      "x": 147,
+      "y": 233,
+      "width": 1080,
+      "height": 1920
+    }
+  },
+  "Android Pixel 6 - Portrait": {
+    "name": "Android Pixel 6 - Portrait",
+    "screen_bounds": {
+      "x": 60,
+      "y": 69,
+      "width": 1080,
+      "height": 2400
+    }
+  },
+  "Android Pixel 9 Pro - Portrait": {
+    "name": "Android Pixel 9 Pro - Portrait",
+    "screen_bounds": {
+      "x": 60,
+      "y": 61,
+      "width": 1280,
+      "height": 2856
+    }
+  },
+  "Android Nexus 5X - Landscape": {
+    "name": "Android Nexus 5X - Landscape",
+    "screen_bounds": {
+      "x": 278,
+      "y": 63,
+      "width": 1920,
+      "height": 1080
+    }
+  },
   "version": "2.5"
 }

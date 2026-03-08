@@ -5,12 +5,15 @@ recursive-include src/koubou *.py
 # Include frame assets - multiple patterns for maximum compatibility
 recursive-include src/koubou/frames *.png
 recursive-include src/koubou/frames *.json
+recursive-include src/koubou/frames *.txt
 include src/koubou/frames/*.png
 include src/koubou/frames/*.json
+include src/koubou/frames/*.txt
 
 # Global patterns as fallback
 global-include *.png
 global-include *.json
+global-include *.txt
 
 # Include package metadata
 include pyproject.toml
